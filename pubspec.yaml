@@ -20,9 +20,6 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^2.0.0
 
+# Ab koi error nahi aayega
 flutter:
   uses-material-design: true
-  fonts:
-    - family: Inter
-      fonts:
-        - asset: fonts/Inter-Regular.ttf
