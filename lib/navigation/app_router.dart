@@ -1,36 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 // ... other imports
-import '../features/test_mode/screens/generate_test_screen.dart';
-import '../features/test_mode/screens/test_mcq_screen.dart'; // Naya import
-import '../features/test_mode/screens/test_score_screen.dart'; // Naya import
+import '../features/test_mode/screens/test_score_screen.dart';
+import '../features/notes/screens/notes_subjects_screen.dart'; // Naya import
+import '../features/notes/screens/notes_list_screen.dart'; // Naya import
 
 class AppRouter {
   static final router = GoRouter(
     initialLocation: '/',
     routes: [
-      GoRoute(path: '/', builder: (context, state) => const LoginScreen()),
-      GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
-      
-      // ... Practice Mode routes ...
-      
-      // Test Mode ke naye raste
+      // ... Baki ke purane raste ...
+      GoRoute(path: '/test_score', builder: (context, state) => TestScoreScreen(results: state.extra as Map<String, dynamic>)),
+
+      // Notes section ke naye raste
       GoRoute(
-        path: '/generate_test',
-        builder: (context, state) => const GenerateTestScreen(),
+        path: '/notes_subjects',
+        builder: (context, state) => const NotesSubjectsScreen(),
       ),
-       GoRoute(
-        path: '/test_mcq',
+      GoRoute(
+        path: '/notes_list',
         builder: (context, state) {
-          final settings = state.extra as Map<String, dynamic>;
-          return TestMcqScreen(testSettings: settings);
-        },
-      ),
-       GoRoute(
-        path: '/test_score',
-        builder: (context, state) {
-          final results = state.extra as Map<String, dynamic>;
-          return TestScoreScreen(results: results);
+          final subject = state.extra as Map<String, dynamic>;
+          return NotesListScreen(subject: subject);
         },
       ),
     ],
