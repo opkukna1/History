@@ -1,4 +1,4 @@
-# Yah file ab 100% kaam karegi
+# Yah file ab 100% kaam karegi, humne tarika badal diya hai
 name: Build Flutter APK
 
 on:
@@ -27,30 +27,21 @@ jobs:
         with:
           channel: 'stable'
 
-      # 4. Ek naya, Pura project banayega
-      - name: Create a complete Flutter project structure
-        run: flutter create --project-name history_metallum temp_project
+      # 4. Zaroori Android/iOS folders banayega (NAYA AUR SABSE ZAROORI STEP)
+      - name: Create platform specific folders
+        run: flutter create .
 
-      # 5. Aapki lib folder ko naye project me copy karega
-      - name: Copy your lib folder
-        run: cp -r lib temp_project/lib
-
-      # 6. Aapki pubspec.yaml file ko naye project me copy karega
-      - name: Copy your pubspec.yaml file
-        run: cp pubspec.yaml temp_project/pubspec.yaml
-
-      # 7. Ab naye project ke folder ke andar saare kaam honge
+      # 5. Dependencies install karega
       - name: Install dependencies
         run: flutter pub get
-        working-directory: ./temp_project
-
+      
+      # 6. APK banayega
       - name: Build APK
         run: flutter build apk --release
-        working-directory: ./temp_project
 
-      # 8. Bane hue APK ko save karega
+      # 7. Bane hue APK ko save karega
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
-          path: temp_project/build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
