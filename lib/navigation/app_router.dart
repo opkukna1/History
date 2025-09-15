@@ -8,15 +8,21 @@ import '../features/practice/screens/sets_screen.dart';
 import '../features/practice/screens/practice_mcq_screen.dart';
 import '../features/practice/screens/score_screen.dart';
 
+// Yah file ab sabhi screens ka rasta janti hai
 class AppRouter {
   static final router = GoRouter(
     initialLocation: '/',
     routes: [
       GoRoute(path: '/', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
+      
+      // Practice Mode ke saare raste
       GoRoute(
         path: '/subjects',
-        builder: (context, state) => const SubjectsScreen(mode: 'practice'),
+        builder: (context, state) {
+          final mode = state.extra as String? ?? 'practice';
+          return SubjectsScreen(mode: mode);
+        },
       ),
        GoRoute(
         path: '/topics',
@@ -47,9 +53,10 @@ class AppRouter {
         }
       ),
     ],
+    // Agar koi rasta na mile to yah page dikhega
     errorBuilder: (context, state) => Scaffold(
       body: Center(
-        child: Text('Error: ${state.error}'),
+        child: Text('Page not found: ${state.error}'),
       ),
     ),
   );
