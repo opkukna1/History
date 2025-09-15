@@ -14,7 +14,7 @@ class LocalDataService {
 
     final rawData = await rootBundle.loadString('assets/question_bank.csv');
     // Yahan se 'const' hata diya gaya hai
-    List<List<dynamic>> listData = const CsvToListConverter(eol: '\n').convert(rawData);
+    List<List<dynamic>> listData = CsvToListConverter(eol: '\n').convert(rawData);
     
     _allQuestions = [];
     if (listData.length > 1) {
@@ -34,38 +34,26 @@ class LocalDataService {
     print('CSV se ${_allQuestions.length} sawal load ho gaye!');
   }
 
-  // ... Baki ke functions waise hi rahenge ...
+  // Baki ke functions waise hi rahenge
   List<Map<String, dynamic>> getSubjects() {
     final subjectNames = _allQuestions.map((q) => q['Subject'] as String).toSet().toList();
     return subjectNames.map((name) => {'id': name, 'name': name}).toList();
   }
 
   List<Map<String, dynamic>> getTopics(String subjectName) {
-     final topicNames = _allQuestions
-        .where((q) => q['Subject'] == subjectName)
-        .map((q) => q['Topic'] as String)
-        .toSet()
-        .toList();
+     final topicNames = _allQuestions.where((q) => q['Subject'] == subjectName).map((q) => q['Topic'] as String).toSet().toList();
     return topicNames.map((name) => {'id': name, 'name': name, 'subjectId': subjectName}).toList();
   }
   
   List<Map<String, dynamic>> getSetsForTopic(String topicName) {
     final questionsForTopic = _allQuestions.where((q) => q['Topic'] == topicName).toList();
     if (questionsForTopic.isEmpty) return [];
-
     List<Map<String, dynamic>> sets = [];
     int setSize = 25;
     int totalSets = (questionsForTopic.length / setSize).ceil();
-
     for (int i = 0; i < totalSets; i++) {
       int questionCount = min(setSize, questionsForTopic.length - (i * setSize));
-      sets.add({
-        'id': 'set${i + 1}',
-        'name': 'Set ${i + 1}',
-        'topicId': topicName,
-        'setIndex': i,
-        'questionCount': questionCount,
-      });
+      sets.add({'id': 'set${i + 1}', 'name': 'Set ${i + 1}', 'topicId': topicName, 'setIndex': i, 'questionCount': questionCount});
     }
     return sets;
   }
