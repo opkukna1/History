@@ -10,7 +10,7 @@ class AppTheme {
       foregroundColor: Colors.black,
       elevation: 1,
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
