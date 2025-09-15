@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/dummy_data.dart';
+import '../../../core/local_data_service.dart'; // Ab hum local data service use karenge
 
 class NotesListScreen extends StatelessWidget {
   final Map<String, dynamic> subject;
@@ -7,10 +7,8 @@ class NotesListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Abhi hum wahi topics use kar rahe hain jo practice mode me the
-    final relevantTopics = DummyData.topics
-        .where((topic) => topic['subjectId'] == subject['id'])
-        .toList();
+    // Data ab local service se aayega
+    final relevantTopics = localDataService.getTopics(subject['name'] as String);
 
     return Scaffold(
       appBar: AppBar(
@@ -36,7 +34,6 @@ class NotesListScreen extends StatelessWidget {
                     ),
                   ),
                   const Divider(),
-                  // Har topic ke andar dummy PDF notes
                   ListTile(
                     leading: const Icon(Icons.picture_as_pdf_rounded, color: Colors.red),
                     title: const Text('Chapter Notes (Hindi)'),
