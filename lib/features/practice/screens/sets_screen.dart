@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/dummy_data.dart';
+import '../../../core/local_data_service.dart';
+
+// Ek global instance banayenge taki data baar baar load na ho
+final localDataService = LocalDataService();
 
 class SetsScreen extends StatelessWidget {
   final Map<String, dynamic> topic;
@@ -8,8 +11,8 @@ class SetsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final relevantSets =
-        DummyData.sets.where((set) => set['topicId'] == topic['id']).toList();
+    // Ab sets yahan se aayenge
+    final relevantSets = localDataService.getSetsForTopic(topic['name'] as String);
 
     return Scaffold(
       appBar: AppBar(title: Text(topic['name'] as String)),
@@ -24,25 +27,19 @@ class SetsScreen extends StatelessWidget {
         itemCount: relevantSets.length,
         itemBuilder: (context, index) {
           final set = relevantSets[index];
-          final isLocked = (set['name'] as String).contains('Locked');
-
           return Card(
-            color: isLocked ? Colors.grey.shade200 : Theme.of(context).cardColor,
             child: InkWell(
-              onTap: isLocked ? null : () => context.push('/practice_mcq', extra: set),
+              onTap: () => context.push('/practice_mcq', extra: set),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (isLocked)
-                    Icon(Icons.lock_rounded, color: Colors.grey.shade600, size: 32)
-                  else
-                    Text(
+                   Text(
                       set['name'] as String,
                       style: const TextStyle(
                           fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                   const SizedBox(height: 8),
-                  Text(isLocked ? 'Coming Soon' : '3 Questions', style: TextStyle(color: Colors.grey.shade600)),
+                  Text('${set['questionCount']} Questions', style: TextStyle(color: Colors.grey.shade600)),
                 ],
               ),
             ),
