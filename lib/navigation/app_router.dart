@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../features/auth/login_screen.dart';
-import '../features/home/home_screen.dart';
-import '../features/practice/screens/subjects_screen.dart';
-import '../features/practice/screens/topics_screen.dart';
-import '../features/practice/screens/sets_screen.dart';
-import '../features/practice/screens/practice_mcq_screen.dart';
-import '../features/practice/screens/score_screen.dart';
+// ... other imports
+import '../features/test_mode/screens/generate_test_screen.dart';
+import '../features/test_mode/screens/test_mcq_screen.dart'; // Naya import
+import '../features/test_mode/screens/test_score_screen.dart'; // Naya import
 
-// Yah file ab sabhi screens ka rasta janti hai
 class AppRouter {
   static final router = GoRouter(
     initialLocation: '/',
@@ -16,48 +12,28 @@ class AppRouter {
       GoRoute(path: '/', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
       
-      // Practice Mode ke saare raste
+      // ... Practice Mode routes ...
+      
+      // Test Mode ke naye raste
       GoRoute(
-        path: '/subjects',
+        path: '/generate_test',
+        builder: (context, state) => const GenerateTestScreen(),
+      ),
+       GoRoute(
+        path: '/test_mcq',
         builder: (context, state) {
-          final mode = state.extra as String? ?? 'practice';
-          return SubjectsScreen(mode: mode);
+          final settings = state.extra as Map<String, dynamic>;
+          return TestMcqScreen(testSettings: settings);
         },
       ),
        GoRoute(
-        path: '/topics',
+        path: '/test_score',
         builder: (context, state) {
-          final subject = state.extra as Map<String, dynamic>;
-          return TopicsScreen(subject: subject);
-        }
-      ),
-      GoRoute(
-        path: '/sets',
-        builder: (context, state) {
-           final topic = state.extra as Map<String, dynamic>;
-          return SetsScreen(topic: topic);
-        }
-      ),
-       GoRoute(
-        path: '/practice_mcq',
-        builder: (context, state) {
-           final set = state.extra as Map<String, dynamic>;
-          return PracticeMcqScreen(set: set);
-        }
-      ),
-      GoRoute(
-        path: '/score',
-        builder: (context, state) {
-           final results = state.extra as Map<String, dynamic>;
-          return ScoreScreen(results: results);
-        }
+          final results = state.extra as Map<String, dynamic>;
+          return TestScoreScreen(results: results);
+        },
       ),
     ],
-    // Agar koi rasta na mile to yah page dikhega
-    errorBuilder: (context, state) => Scaffold(
-      body: Center(
-        child: Text('Page not found: ${state.error}'),
-      ),
-    ),
+    // ... error builder ...
   );
 }
