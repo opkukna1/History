@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/dummy_data.dart';
+import '../../../core/local_data_service.dart';
+
+// Ek global instance banayenge taki data baar baar load na ho
+final localDataService = LocalDataService();
 
 class PracticeMcqScreen extends StatefulWidget {
   final Map<String, dynamic> set;
@@ -20,16 +23,18 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
   @override
   void initState() {
     super.initState();
-    _questions = DummyData.mcqs
-        .where((mcq) => mcq['setId'] == widget.set['id'])
-        .toList();
+    // Ab questions yahan se aayenge
+    _questions = localDataService.getQuestionsForSet(
+      widget.set['topicId'] as String,
+      widget.set['setIndex'] as int,
+    );
   }
 
   void _checkAnswer(String option) {
     setState(() {
       _selectedOption = option;
       _showAnswer = true;
-      if (option == _questions[_currentIndex]['correctAnswer']) {
+      if (option == _questions[_currentIndex]['CorrectAnswer']) {
         _score++;
       }
     });
@@ -42,11 +47,7 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
         _selectedOption = null;
         _showAnswer = false;
       } else {
-        // Test finished, go to score screen
-        final results = {
-          'score': _score,
-          'total': _questions.length,
-        };
+        final results = {'score': _score, 'total': _questions.length};
         context.go('/score', extra: results);
       }
     });
@@ -54,11 +55,24 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_questions.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: Text(widget.set['name'] as String)),
+        body: const Center(child: Text('No questions found for this set.')),
+      );
+    }
+    
     final questionData = _questions[_currentIndex];
+    final options = [
+      questionData['OptionA'],
+      questionData['OptionB'],
+      questionData['OptionC'],
+      questionData['OptionD'],
+    ];
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.set['name']} - Question ${_currentIndex + 1}/${_questions.length}'),
+        title: Text('${widget.set['name']} - Q ${_currentIndex + 1}/${_questions.length}'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -66,41 +80,29 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              questionData['question'] as String,
+              questionData['Question'] as String,
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
-            ...List.generate(
-              (questionData['options'] as List).length,
-              (index) {
-                final option = (questionData['options'] as List)[index];
-                bool isCorrect = option == questionData['correctAnswer'];
+            ...options.map((option) {
+                bool isCorrect = option == questionData['CorrectAnswer'];
                 bool isSelected = option == _selectedOption;
-
                 Color? tileColor;
                 if (_showAnswer) {
-                  if (isCorrect) {
-                    tileColor = Colors.green.shade100;
-                  } else if (isSelected) {
-                    tileColor = Colors.red.shade100;
-                  }
+                  if (isCorrect) tileColor = Colors.green.shade100;
+                  else if (isSelected) tileColor = Colors.red.shade100;
                 }
-
                 return Card(
                   color: tileColor,
                   child: ListTile(
-                    title: Text(option),
-                    onTap: _showAnswer ? null : () => _checkAnswer(option),
+                    title: Text(option.toString()),
+                    onTap: _showAnswer ? null : () => _checkAnswer(option.toString()),
                   ),
                 );
-              },
-            ),
+            }).toList(),
             const Spacer(),
             if (_showAnswer)
               ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
                 onPressed: _nextQuestion,
                 child: Text(_currentIndex == _questions.length - 1 ? 'Submit' : 'Next'),
               ),
