@@ -1,5 +1,6 @@
-import 'package/flutter/material.dart';
+import 'package:flutter/material.dart';
 
+// Yah file app ke design (colors, fonts, etc.) ko control karti hai
 class AppTheme {
   static final lightTheme = ThemeData(
     colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
