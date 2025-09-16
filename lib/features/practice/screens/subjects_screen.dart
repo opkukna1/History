@@ -25,8 +25,11 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.blueGrey[50], // नया बैकग्राउंड कलर
       appBar: AppBar(
         title: Text('${widget.mode} Mode - Subjects'),
+        backgroundColor: Colors.white,
+        elevation: 1,
       ),
       body: FutureBuilder<void>(
         future: _loadingFuture,
@@ -34,15 +37,23 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          // This was the line with the copy-paste error. This is the correct version.
           final subjects = localDataService.getSubjects();
           return ListView.builder(
+            padding: const EdgeInsets.all(12.0),
             itemCount: subjects.length,
             itemBuilder: (context, index) {
               final subjectName = subjects[index];
               return Card(
+                elevation: 2,
+                margin: const EdgeInsets.symmetric(vertical: 6.0),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 child: ListTile(
-                  title: Text(subjectName),
+                  leading: CircleAvatar(
+                    backgroundColor: Colors.blue.withOpacity(0.1),
+                    child: const Icon(Icons.menu_book, color: Colors.blue),
+                  ),
+                  title: Text(subjectName, style: const TextStyle(fontWeight: FontWeight.w500)),
+                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
                   onTap: () => context.go('/topics', extra: subjectName),
                 ),
               );
