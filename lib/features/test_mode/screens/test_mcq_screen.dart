@@ -29,7 +29,8 @@ class _TestMcqScreenState extends State<TestMcqScreen> {
   void _submitTest() {
     int score = 0;
     for (int i = 0; i < _questions.length; i++) {
-      if (_userAnswers[i] == _questions[i]['CorrectAnswer']) {
+      // YAHAN PAR GALTI THEEK KAR DI GAYI HAI
+      if (_userAnswers[i] == _questions[i]['CorrectOption']) {
         score++;
       }
     }
