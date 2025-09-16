@@ -9,16 +9,18 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
-      appBar: AppBar(
-        title: const Text('Dashboard', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 1,
-      ),
+      appBar: AppBar(title: const Text('Dashboard')),
       drawer: const AppDrawer(),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
+          // NAYA DEBUG BUTTON
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => context.push('/debug'),
+            child: const Text('Run X-Ray Report', style: TextStyle(color: Colors.white)),
+          ),
+          const SizedBox(height: 16),
           _buildWelcomeCard(context),
           const SizedBox(height: 24),
           _buildActionCard(
