@@ -1,16 +1,10 @@
+// lib/main.dart
+
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'app_state.dart';
-import 'navigation/app_router.dart';
-import 'core/theme.dart';
+import 'package:history_metallum/navigation/app_router.dart'; // Correct import
 
 void main() {
-  runApp(
-    ChangeNotifierProvider(
-      create: (context) => AppState(),
-      child: const HistoryMetallumApp(),
-    ),
-  );
+  runApp(const HistoryMetallumApp());
 }
 
 class HistoryMetallumApp extends StatelessWidget {
@@ -19,12 +13,13 @@ class HistoryMetallumApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'History Metallum',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
-      routerConfig: AppRouter.router,
-      debugShowCheckedModeBanner: false,
+      title: 'History App',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      // FIX: Call the router variable directly, not through a class.
+      routerConfig: router, 
     );
   }
 }
