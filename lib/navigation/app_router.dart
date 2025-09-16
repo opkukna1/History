@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../features/debug/debug_screen.dart'; // Naya import
 import '../features/auth/login_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/practice/screens/subjects_screen.dart';
@@ -19,6 +20,7 @@ class AppRouter {
     routes: [
       GoRoute(path: '/', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
+      GoRoute(path: '/debug', builder: (context, state) => const DebugScreen()), // Naya Rasta
       GoRoute(path: '/subjects', builder: (context, state) => SubjectsScreen(mode: state.extra as String? ?? 'practice')),
       GoRoute(path: '/topics', builder: (context, state) => TopicsScreen(subject: state.extra as Map<String, dynamic>)),
       GoRoute(path: '/sets', builder: (context, state) => SetsScreen(topic: state.extra as Map<String, dynamic>)),
