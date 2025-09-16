@@ -45,13 +45,18 @@ final GoRouter router = GoRouter(
     GoRoute(
       path: '/score',
       builder: (context, state) {
-        // यहाँ डेटा Integer के रूप में आ रहा है, इसलिए Map<String, int>
-        final data = state.extra as Map<String, int>;
-        final totalQuestions = data['totalQuestions']!;
-        final correctAnswers = data['correctAnswers']!;
+        // FIX: This part was causing the error. Now it correctly gets
+        // and passes all the required data to the ScoreScreen.
+        final data = state.extra as Map<String, dynamic>;
+        final totalQuestions = data['totalQuestions'] as int;
+        final correctAnswers = data['correctAnswers'] as int;
+        final subject = data['subject'] as String;
+        final topic = data['topic'] as String;
         return ScoreScreen(
           totalQuestions: totalQuestions,
           correctAnswers: correctAnswers,
+          subject: subject,
+          topic: topic,
         );
       },
     ),
