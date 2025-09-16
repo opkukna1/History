@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/dummy_data.dart';
+import '../../../core/local_data_service.dart'; // Ab sahi jagah se data aayega
 
 class TopicsScreen extends StatelessWidget {
   final Map<String, dynamic> subject;
@@ -8,9 +8,7 @@ class TopicsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final relevantTopics = DummyData.topics
-        .where((topic) => topic['subjectId'] == subject['id'])
-        .toList();
+    final relevantTopics = localDataService.getTopics(subject['name'] as String);
 
     return Scaffold(
       appBar: AppBar(title: Text(subject['name'] as String)),
