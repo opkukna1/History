@@ -2,57 +2,87 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-// NOTE: Make sure you have these files in your project
+// NOTE: Make sure you have these files in your project if you use them
 // import '../../app_state.dart'; 
 // import 'package:provider/provider.dart';
 
-class HomeScreen extends StatelessWidget {
+// HomeScreen को StatefulWidget में बदला गया
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  // आखिरी बार बैक बटन कब दबाया गया, यह स्टोर करने के लिए वेरिएबल
+  DateTime? lastPressed;
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard')),
-      drawer: const AppDrawer(), // Assuming AppDrawer is in this file or imported
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: [
-          // डीबग बटन हटा दिया गया है
-          _buildWelcomeCard(context),
-          const SizedBox(height: 24),
-          _buildActionCard(
-            context,
-            icon: Icons.chrome_reader_mode_outlined,
-            title: 'Practice Mode',
-            subtitle: 'Learn topic-wise with sets',
-            color: Colors.blue,
-            onTap: () => context.push('/subjects'),
-          ),
-          const SizedBox(height: 16),
-          _buildActionCard(
-            context,
-            icon: Icons.checklist_rtl_rounded,
-            title: 'Test Mode',
-            subtitle: 'Generate a real exam experience',
-            color: Colors.green,
-            onTap: () => context.push('/generate_test'),
-          ),
-          const SizedBox(height: 16),
-           _buildActionCard(
-            context,
-            icon: Icons.note_alt_outlined,
-            title: 'Notes',
-            subtitle: 'Read and download PDF notes',
-            color: Colors.orange,
-            onTap: () => context.push('/notes_subjects'),
-          ),
-          const SizedBox(height: 24),
-          _buildNotices(context),
-        ],
+    // WillPopScope विजेट जोड़ा गया ताकि बैक बटन को कंट्रोल कर सकें
+    return WillPopScope(
+      onWillPop: () async {
+        final now = DateTime.now();
+        final maxDuration = const Duration(seconds: 2);
+        final isWarning = lastPressed == null || now.difference(lastPressed!) > maxDuration;
+
+        if (isWarning) {
+          lastPressed = DateTime.now();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Press back again to exit'),
+              duration: maxDuration,
+            ),
+          );
+          return false; // ऐप को बंद होने से रोकता है
+        } else {
+          return true; // ऐप को बंद होने देता है
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Dashboard')),
+        drawer: const AppDrawer(),
+        body: ListView(
+          padding: const EdgeInsets.all(16.0),
+          children: [
+            _buildWelcomeCard(context),
+            const SizedBox(height: 24),
+            _buildActionCard(
+              context,
+              icon: Icons.chrome_reader_mode_outlined,
+              title: 'Practice Mode',
+              subtitle: 'Learn topic-wise with sets',
+              color: Colors.blue,
+              onTap: () => context.push('/subjects'),
+            ),
+            const SizedBox(height: 16),
+            _buildActionCard(
+              context,
+              icon: Icons.checklist_rtl_rounded,
+              title: 'Test Mode',
+              subtitle: 'Generate a real exam experience',
+              color: Colors.green,
+              onTap: () => context.push('/generate_test'),
+            ),
+            const SizedBox(height: 16),
+            _buildActionCard(
+              context,
+              icon: Icons.note_alt_outlined,
+              title: 'Notes',
+              subtitle: 'Read and download PDF notes',
+              color: Colors.orange,
+              onTap: () => context.push('/notes_subjects'),
+            ),
+            const SizedBox(height: 24),
+            _buildNotices(context),
+          ],
+        ),
       ),
     );
   }
 
+  // बाकी के विजेट्स वैसे ही रहेंगे
   Widget _buildWelcomeCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -122,6 +152,7 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
+// AppDrawer जैसा था वैसा ही रहेगा
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
@@ -141,7 +172,6 @@ class AppDrawer extends StatelessWidget {
           ListTile(leading: const Icon(Icons.note_alt_outlined), title: const Text('Notes'), onTap: () => context.push('/notes_subjects')),
           const Divider(),
           ListTile(leading: const Icon(Icons.logout_outlined), title: const Text('Logout'), onTap: () {
-            // NOTE: Make sure you have Provider and AppState set up for this to work
             // Provider.of<AppState>(context, listen: false).logout();
             context.go('/');
           }),
