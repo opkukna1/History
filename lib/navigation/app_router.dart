@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+// lib/navigation/app_router.dart
+
 import 'package:go_router/go_router.dart';
 import '../features/home/home_screen.dart';
 import '../features/practice/screens/subjects_screen.dart';
@@ -6,6 +7,7 @@ import '../features/practice/screens/topics_screen.dart';
 import '../features/practice/screens/sets_screen.dart';
 import '../features/practice/screens/practice_mcq_screen.dart';
 
+// FIX: Define the router as a top-level variable
 final GoRouter router = GoRouter(
   initialLocation: '/',
   routes: [
@@ -15,7 +17,8 @@ final GoRouter router = GoRouter(
     ),
     GoRoute(
       path: '/subjects',
-      builder: (context, state) => const SubjectsScreen(),
+      // FIX: Provide the required 'mode' parameter. Assuming "Practice" for this route.
+      builder: (context, state) => const SubjectsScreen(mode: "Practice"),
     ),
     GoRoute(
       path: '/topics',
@@ -27,7 +30,6 @@ final GoRouter router = GoRouter(
     GoRoute(
       path: '/sets',
       builder: (context, state) {
-        // यहाँ डेटा को सही तरीके से निकालें
         final data = state.extra as Map<String, String>;
         final subject = data['subject']!;
         final topic = data['topic']!;
@@ -37,11 +39,9 @@ final GoRouter router = GoRouter(
      GoRoute(
       path: '/practice-mcq',
       builder: (context, state) {
-        final data = state.extra as Map<String, dynamic>;
-        final subject = data['subject'] as String;
-        final topic = data['topic'] as String;
-        final setIndex = data['setIndex'] as int;
-        return PracticeMcqScreen(subject: subject, topic: topic, setIndex: setIndex);
+        // FIX: Pass the data as a single 'set' map, as the screen expects.
+        final setData = state.extra as Map<String, dynamic>;
+        return PracticeMcqScreen(set: setData);
       },
     ),
   ],
