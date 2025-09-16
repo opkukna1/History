@@ -22,17 +22,11 @@ class Question {
     required this.optionD,
     required this.correctOption,
   });
-
-  @override
-  String toString() {
-    return 'Question{subject: $subject, topic: $topic, questionText: $questionText}';
-  }
 }
 
 class LocalDataService {
   static final LocalDataService _instance = LocalDataService._internal();
   factory LocalDataService() => _instance;
-
   LocalDataService._internal();
 
   List<Question> _allQuestions = [];
@@ -44,9 +38,9 @@ class LocalDataService {
       final rawData = await rootBundle.loadString('assets/question_bank.csv');
       List<List<dynamic>> listData = const CsvToListConverter(eol: '\n').convert(rawData);
       
-      _allQuestions = []; // Clear previous data
+      _allQuestions = [];
       if (listData.length > 1) {
-        listData.removeAt(0); // Remove header
+        listData.removeAt(0); // Header हटाएँ
         for (var row in listData) {
           if (row.length == 8) {
              _allQuestions.add(Question(
@@ -70,7 +64,6 @@ class LocalDataService {
     }
   }
 
-  // --- EXISTING FUNCTIONS ---
   List<String> getSubjects() {
     if (!_isInitialized) return [];
     return _allQuestions.map((q) => q.subject).toSet().toList();
@@ -85,40 +78,21 @@ class LocalDataService {
         .toList();
   }
 
-  List<Question> getQuestionsForSet(String subject, String topic, int setNumber) {
-    if (!_isInitialized) return [];
-    final questionsForTopic = _allQuestions
+  List<Question> getQuestionsForTopic(String subject, String topic) {
+     if (!_isInitialized) return [];
+     return _allQuestions
         .where((q) =>
             q.subject.trim().toLowerCase() == subject.trim().toLowerCase() &&
             q.topic.trim().toLowerCase() == topic.trim().toLowerCase())
         .toList();
-
+  }
+  
+  List<Question> getQuestionsForSet(String subject, String topic, int setNumber) {
+    final questionsForTopic = getQuestionsForTopic(subject, topic);
     int startIndex = (setNumber - 1) * 10;
     int endIndex = startIndex + 10;
-    if (startIndex >= questionsForTopic.length) {
-      return [];
-    }
-    if (endIndex > questionsForTopic.length) {
-      endIndex = questionsForTopic.length;
-    }
+    if (startIndex >= questionsForTopic.length) return [];
+    if (endIndex > questionsForTopic.length) endIndex = questionsForTopic.length;
     return questionsForTopic.sublist(startIndex, endIndex);
-  }
-
-  // --- NEW FORENSIC FUNCTION ---
-  List<Question> getQuestionsForTopicXRay(String subject, String topic) {
-    dev.log('FORENSICS: Searching for Subject="$subject", Topic="$topic"');
-    if (!_isInitialized) {
-      dev.log('FORENSICS: Data not initialized.');
-      return [];
-    }
-    
-    final matchingQuestions = _allQuestions
-        .where((q) =>
-            q.subject.trim().toLowerCase() == subject.trim().toLowerCase() &&
-            q.topic.trim().toLowerCase() == topic.trim().toLowerCase())
-        .toList();
-    
-    dev.log('FORENSICS: Found ${matchingQuestions.length} matching questions.');
-    return matchingQuestions;
   }
 }
