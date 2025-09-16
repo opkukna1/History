@@ -1,6 +1,9 @@
 name: history_metallum
 description: A new Flutter project for competitive exams.
+
+# Prevent accidental publishing to pub.dev.
 publish_to: 'none'
+
 version: 1.0.0+1
 
 environment:
@@ -10,22 +13,28 @@ dependencies:
   flutter:
     sdk: flutter
   
+  # App Icons
   cupertino_icons: ^1.0.2
+
+  # Functional Packages
   go_router: ^10.0.0
   provider: ^6.0.5
   percent_indicator: ^4.2.3
-  
-  # YAH HAI SABSE ZAROORI LINE JO MISSING THI
   csv: ^5.0.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  
   flutter_lints: ^2.0.0
 
+# The following section is specific to Flutter packages.
 flutter:
   uses-material-design: true
   
-  # Yh line bhi zaroori hai
+  # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/
+    - assets/logo.png
+    - assets/question_bank.csv
+    # You can also include the whole directory like this:
+    # - assets/
