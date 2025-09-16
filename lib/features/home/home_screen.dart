@@ -18,8 +18,7 @@ class HomeScreen extends StatelessWidget {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => context.push('/debug'),
-            child: const Text('Today's Task', style: TextStyle(color: Colors.white)),
-          ),
+            child: const Text("Today's Task", style: TextStyle(color: Colors.white)),
           const SizedBox(height: 16),
           _buildWelcomeCard(context),
           const SizedBox(height: 24),
