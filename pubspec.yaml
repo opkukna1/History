@@ -10,14 +10,13 @@ dependencies:
   flutter:
     sdk: flutter
   
-  # Yh packages app ko sundar aur functional banate hai
   cupertino_icons: ^1.0.2
   go_router: ^10.0.0
   provider: ^6.0.5
-  # Sundar UI ke liye
-  lottie: ^2.6.0
   percent_indicator: ^4.2.3
-
+  
+  # YAH HAI SABSE ZAROORI LINE JO MISSING THI
+  csv: ^5.0.2
 
 dev_dependencies:
   flutter_test:
@@ -26,5 +25,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  
+  # Yh line bhi zaroori hai
   assets:
     - assets/
