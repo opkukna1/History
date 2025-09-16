@@ -29,7 +29,22 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
     final setIndex = widget.set['setIndex'] as int;
     _questions = localDataService.getQuestionsForSet(subject, topic, setIndex);
   }
+  
+  void _submitQuiz() {
+    // FIX: अब हम स्कोर के साथ subject और topic भी भेज रहे हैं
+    context.go(
+      '/score',
+      extra: {
+        'totalQuestions': _questions.length,
+        'correctAnswers': _score,
+        'subject': widget.set['subject'],
+        'topic': widget.set['topic'],
+      },
+    );
+  }
 
+  // बाकी का कोड (build, _handleNext, आदि) वैसा ही रहेगा...
+  // ... (No other changes are needed in this file) ...
   void _handleNext() {
     if (_currentIndex < _questions.length - 1) {
       setState(() {
@@ -62,16 +77,6 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
       }
     });
   }
-  
-  void _submitQuiz() {
-    context.go(
-      '/score',
-      extra: {
-        'totalQuestions': _questions.length,
-        'correctAnswers': _score,
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +89,6 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
 
     final question = _questions[_currentIndex];
 
-    // WillPopScope यहाँ से हटा दिया गया है
     return Scaffold(
       backgroundColor: Colors.teal,
       appBar: AppBar(
