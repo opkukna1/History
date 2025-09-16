@@ -2,11 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-// NOTE: Make sure you have these files in your project if you use them
-// import '../../app_state.dart'; 
-// import 'package:provider/provider.dart';
 
-// HomeScreen को StatefulWidget में बदला गया
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -15,12 +11,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // आखिरी बार बैक बटन कब दबाया गया, यह स्टोर करने के लिए वेरिएबल
   DateTime? lastPressed;
 
   @override
   Widget build(BuildContext context) {
-    // WillPopScope विजेट जोड़ा गया ताकि बैक बटन को कंट्रोल कर सकें
     return WillPopScope(
       onWillPop: () async {
         final now = DateTime.now();
@@ -30,14 +24,15 @@ class _HomeScreenState extends State<HomeScreen> {
         if (isWarning) {
           lastPressed = DateTime.now();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            // FIX: 'const' keyword removed from here to fix the build error.
+            SnackBar(
               content: Text('Press back again to exit'),
               duration: maxDuration,
             ),
           );
-          return false; // ऐप को बंद होने से रोकता है
+          return false;
         } else {
-          return true; // ऐप को बंद होने देता है
+          return true;
         }
       },
       child: Scaffold(
@@ -82,7 +77,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // बाकी के विजेट्स वैसे ही रहेंगे
   Widget _buildWelcomeCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -152,7 +146,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// AppDrawer जैसा था वैसा ही रहेगा
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
