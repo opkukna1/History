@@ -15,15 +15,8 @@ class PracticeMcqScreen extends StatefulWidget {
 class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
   final LocalDataService localDataService = LocalDataService();
   late List<Question> _questions;
-  
-  // FIX: PageView को कंट्रोल करने के लिए
   late PageController _pageController;
-
-  // FIX: हर सवाल का जवाब स्टोर करने के लिए
-  // Key: सवाल का index, Value: चुना गया ऑप्शन
   final Map<int, String> _selectedAnswers = {};
-  
-  // FIX: वर्तमान पेज का index रखने के लिए
   int _currentPage = 0;
 
   @override
@@ -34,10 +27,7 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
       widget.set['topic'] as String,
       widget.set['setIndex'] as int,
     );
-    
     _pageController = PageController();
-
-    // पेज बदलने पर _currentPage को अपडेट करने के लिए Listener
     _pageController.addListener(() {
       setState(() {
         _currentPage = _pageController.page?.round() ?? 0;
@@ -53,13 +43,11 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
   
   void _submitQuiz() {
     int score = 0;
-    // FIX: अंत में सभी जवाबों को चेक करके स्कोर की गणना करें
     for (int i = 0; i < _questions.length; i++) {
       if (_selectedAnswers[i] == _questions[i].correctOption) {
         score++;
       }
     }
-
     context.go(
       '/score',
       extra: {
@@ -72,9 +60,7 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
   }
 
   void _handleAnswer(int questionIndex, String option) {
-    // अगर उस सवाल का जवाब पहले से दिया है, तो कुछ न करें
     if (_selectedAnswers.containsKey(questionIndex)) return;
-
     setState(() {
       _selectedAnswers[questionIndex] = option;
     });
@@ -116,7 +102,6 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
       ),
       body: Column(
         children: [
-          // FIX: सवालों को स्वाइप करने के लिए PageView
           Expanded(
             child: PageView.builder(
               controller: _pageController,
@@ -133,10 +118,11 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
     );
   }
 
-  // एक सवाल और उसके विकल्पों को दिखाने वाला विजेट
   Widget _buildQuestionCard(Question question, int index) {
     final bool isAnswered = _selectedAnswers.containsKey(index);
     final String? selectedOption = _selectedAnswers[index];
+    final optionLabels = ['A', 'B', 'C', 'D'];
+    final options = [question.optionA, question.optionB, question.optionC, question.optionD];
     
     Color getOptionColor(String option) {
       if (!isAnswered) return Colors.transparent;
@@ -146,64 +132,72 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Card(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         elevation: 8,
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Question ${index + 1}/${_questions.length}',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Text(
-                    question.questionText,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Question ${index + 1}/${_questions.length}',
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
                 ),
-              ),
-              const SizedBox(height: 24),
-              ...[question.optionA, question.optionB, question.optionC, question.optionD].map((option) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6.0),
-                  child: InkWell(
-                    onTap: () => _handleAnswer(index, option),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(12),
-                        color: getOptionColor(option),
+                const SizedBox(height: 12),
+                Text(
+                  question.questionText,
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                
+                // FIX: Spacer को यहाँ से हटा दिया गया है
+                const SizedBox(height: 24), // प्रश्न और विकल्पों के बीच थोड़ा गैप
+
+                ...options.asMap().entries.map((entry) {
+                  int optionIndex = entry.key;
+                  String optionText = entry.value;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6.0),
+                    child: InkWell(
+                      onTap: () => _handleAnswer(index, optionText),
+                      child: Container(
+                        // FIX: पैडिंग बढ़ाई गई
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(12),
+                          color: getOptionColor(optionText),
+                        ),
+                        child: Text(
+                          '${optionLabels[optionIndex]}. $optionText',
+                          // FIX: फॉन्ट साइज बढ़ाया गया
+                          style: const TextStyle(fontSize: 17),
+                        ),
                       ),
-                      child: Text(option, style: const TextStyle(fontSize: 16)),
+                    ),
+                  );
+                }).toList(),
+                const SizedBox(height: 20),
+                if (isAnswered)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Correct Answer is: ${question.correctOption}',
+                      style: const TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
-                );
-              }).toList(),
-              const SizedBox(height: 10),
-              if (isAnswered)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'Correct Answer is: ${question.correctOption}',
-                    style: const TextStyle(
-                      color: Colors.green,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
