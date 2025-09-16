@@ -34,7 +34,7 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
     setState(() {
       _selectedOption = option;
       _showAnswer = true;
-      if (option == _questions[_currentIndex]['CorrectAnswer']) {
+      if (option == _questions[_currentIndex]['CorrectOption']) {
         _score++;
       }
     });
