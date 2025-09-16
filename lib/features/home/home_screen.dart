@@ -1,5 +1,7 @@
 // lib/features/home/home_screen.dart
 
+import 'dart:ui'; // BackdropFilter के लिए ज़रूरी
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -35,91 +37,73 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       },
       child: Scaffold(
-        // FIX: AppBar में Dashboard की जगह लोगो जोड़ा गया
+        backgroundColor: Colors.white,
         appBar: AppBar(
-          backgroundColor: Colors.transparent, // AppBar को पारदर्शी बनाएं
-          elevation: 0, // शैडो हटा दें
+          backgroundColor: Colors.white,
+          elevation: 1.0,
           title: Image.asset(
-            'assets/logo.png', // अपनी लोगो इमेज का पाथ यहाँ डालें
-            height: 40, // लोगो की ऊँचाई एडजस्ट करें
+            'assets/logo.png',
+            height: 40,
           ),
-          centerTitle: true, // लोगो को बीच में रखें
-          iconTheme: const IconThemeData(color: Colors.white), // Drawer आइकॉन का कलर
+          centerTitle: true,
         ),
-        // FIX: होम स्क्रीन के बैकग्राउंड में ग्रेडिएंट जोड़ा गया
-        extendBodyBehindAppBar: true, // ऐप बार के पीछे ग्रेडिएंट फैलाएं
-        body: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF6A1B9A), // गहरा बैंगनी
-                Color(0xFF9C27B0), // हल्का बैंगनी
-                Color(0xFFE040FB), // चमकीला गुलाबी-बैंगनी
-              ],
-              stops: [0.1, 0.5, 0.9],
+        body: ListView(
+          padding: const EdgeInsets.all(16.0),
+          children: [
+            _buildWelcomeCard(context),
+            const SizedBox(height: 24),
+            _buildActionCard(
+              context,
+              icon: Icons.chrome_reader_mode_outlined,
+              title: 'Practice Mode',
+              subtitle: 'Learn topic-wise with sets',
+              color: Colors.blue,
+              // bgColor को हटाया क्योंकि ग्लासमोर्फिज्म में इसकी ज़रूरत नहीं
+              onTap: () => context.push('/subjects'),
             ),
-          ),
-          child: ListView(
-            padding: const EdgeInsets.only(top: kToolbarHeight + 40, left: 16, right: 16), // AppBar के नीचे से पैडिंग
-            children: [
-              _buildWelcomeCard(context),
-              const SizedBox(height: 24),
-              _buildActionCard(
-                context,
-                icon: Icons.chrome_reader_mode_outlined,
-                title: 'Practice Mode',
-                subtitle: 'Learn topic-wise with sets',
-                color: Colors.blue,
-                bgColor: Colors.blue.shade50, // FIX: हल्का बैकग्राउंड कलर
-                onTap: () => context.push('/subjects'),
-              ),
-              const SizedBox(height: 16),
-              _buildActionCard(
-                context,
-                icon: Icons.checklist_rtl_rounded,
-                title: 'Test Mode',
-                subtitle: 'Generate a real exam experience',
-                color: Colors.green,
-                bgColor: Colors.green.shade50, // FIX: हल्का बैकग्राउंड कलर
-                onTap: () => context.push('/generate_test'),
-              ),
-              const SizedBox(height: 16),
-              _buildActionCard(
-                context,
-                icon: Icons.note_alt_outlined,
-                title: 'Notes',
-                subtitle: 'Read and download PDF notes',
-                color: Colors.orange,
-                bgColor: Colors.orange.shade50, // FIX: हल्का बैकग्राउंड कलर
-                onTap: () => context.push('/notes_subjects'),
-              ),
-              const SizedBox(height: 24),
-              _buildNotices(context),
-            ],
-          ),
+            const SizedBox(height: 16),
+            _buildActionCard(
+              context,
+              icon: Icons.checklist_rtl_rounded,
+              title: 'Test Mode',
+              subtitle: 'Generate a real exam experience',
+              color: Colors.green,
+              // bgColor को हटाया
+              onTap: () => context.push('/generate_test'),
+            ),
+            const SizedBox(height: 16),
+            _buildActionCard(
+              context,
+              icon: Icons.note_alt_outlined,
+              title: 'Notes',
+              subtitle: 'Read and download PDF notes',
+              color: Colors.orange,
+              // bgColor को हटाया
+              onTap: () => context.push('/notes_subjects'),
+            ),
+            const SizedBox(height: 24),
+            _buildNotices(context),
+          ],
         ),
         drawer: const AppDrawer(),
       ),
     );
   }
 
-  // FIX: Welcome Card को और आकर्षक बनाया गया
   Widget _buildWelcomeCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        // FIX: Welcome Card में ग्रेडिएंट बैकग्राउंड
+        // FIX: Welcome Card में फिर से हल्का ग्रेडिएंट दिया गया
         gradient: const LinearGradient(
-          colors: [Color(0xFFB39DDB), Color(0xFFE1BEE7)], // हल्के बैंगनी रंग
+          colors: [Color(0xFFEDE7F6), Color(0xFFF3E5F5)], // Light purple gradient
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.08),
             spreadRadius: 2,
             blurRadius: 8,
             offset: const Offset(0, 4),
@@ -133,14 +117,14 @@ class _HomeScreenState extends State<HomeScreen> {
             'Welcome Back!',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.deepPurple.shade900, // गहरा टेक्स्ट कलर
+              color: Colors.deepPurple.shade900,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'Ready to conquer your exams today?',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Colors.deepPurple.shade700, // गहरा टेक्स्ट कलर
+              color: Colors.deepPurple.shade700,
             ),
           ),
         ],
@@ -148,43 +132,55 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // FIX: Action Card में नया bgColor पैरामीटर जोड़ा गया
-  Widget _buildActionCard(BuildContext context, {required IconData icon, required String title, required String subtitle, required Color color, Color? bgColor, required VoidCallback onTap}) {
-    return Card(
-      elevation: 4, // शैडो बढ़ाई गई
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
+  // FIX: Action Card में ग्लासमोर्फिज्म इफ़ेक्ट जोड़ा गया
+  Widget _buildActionCard(BuildContext context, {required IconData icon, required String title, required String subtitle, required Color color, required VoidCallback onTap}) {
+    return ClipRRect( // कोने गोल करने के लिए
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter( // बैकग्राउंड को धुंधला करने के लिए
+        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5), // धुंधलापन एडजस्ट करें
         child: Container(
           decoration: BoxDecoration(
-            color: bgColor ?? Colors.white, // FIX: बैकग्राउंड कलर का उपयोग
+            color: Colors.white.withOpacity(0.3), // हल्का पारदर्शी सफेद रंग
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withOpacity(0.2)), // हल्का बॉर्डर
           ),
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              CircleAvatar(radius: 28, backgroundColor: color.withOpacity(0.2), child: Icon(icon, color: color, size: 32)), // आइकॉन का साइज बढ़ाया गया
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          child: Material( // InkWell के लिए ज़रूरी
+            color: Colors.transparent, // ताकि InkWell का रंग दिखे
+            child: InkWell(
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
                   children: [
-                    Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Colors.grey.shade800)),
-                    const SizedBox(height: 4),
-                    Text(subtitle, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600)),
+                    CircleAvatar(radius: 28, backgroundColor: color.withOpacity(0.2), child: Icon(icon, color: color, size: 32)),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Colors.black87), // टेक्स्ट का कलर काला किया
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            subtitle,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black54), // टेक्स्ट का कलर काला किया
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.arrow_forward_ios_rounded, color: Colors.black45, size: 20),
                   ],
                 ),
               ),
-              Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey.shade400, size: 20),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
   
-  // FIX: Notices कार्ड का डिज़ाइन भी बेहतर किया गया
   Widget _buildNotices(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -193,19 +189,12 @@ class _HomeScreenState extends State<HomeScreen> {
           'Important Notices',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
-            color: Colors.white, // टेक्स्ट का कलर सफेद किया गया
-            shadows: const [
-              Shadow(
-                blurRadius: 4.0,
-                color: Colors.black38,
-                offset: Offset(1.0, 1.0),
-              ),
-            ],
+            color: Colors.grey.shade800, 
           ),
         ),
         const SizedBox(height: 12),
         Card(
-          elevation: 4, // शैडो बढ़ाई गई
+          elevation: 2,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: const ListTile(
             leading: Icon(Icons.campaign_rounded, color: Colors.deepPurple, size: 30),
@@ -218,7 +207,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// AppDrawer जैसा था वैसा ही रहेगा
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
@@ -232,7 +220,7 @@ class AppDrawer extends StatelessWidget {
             decoration: BoxDecoration(color: Colors.deepPurple),
             child: Text('History Metallum', style: TextStyle(color: Colors.white, fontSize: 24)),
           ),
-          ListTile(leading: const Icon(Icons.home_outlined), title: const Text('Home'), onTap: () => context.go('/')), // FIX: /home की जगह /
+          ListTile(leading: const Icon(Icons.home_outlined), title: const Text('Home'), onTap: () => context.go('/')),
           ListTile(leading: const Icon(Icons.chrome_reader_mode_outlined), title: const Text('Practice Mode'), onTap: () => context.push('/subjects')),
           ListTile(leading: const Icon(Icons.checklist_rtl_rounded), title: const Text('Test Mode'), onTap: () => context.push('/generate_test')),
           ListTile(leading: const Icon(Icons.note_alt_outlined), title: const Text('Notes'), onTap: () => context.push('/notes_subjects')),
