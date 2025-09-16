@@ -1,28 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/local_data_service.dart'; // Ab sahi jagah se data aayega
+import '../../../core/local_data_service.dart';
 
 class TopicsScreen extends StatelessWidget {
-  final Map<String, dynamic> subject;
+  final String subject;
   const TopicsScreen({super.key, required this.subject});
 
   @override
   Widget build(BuildContext context) {
-    final relevantTopics = localDataService.getTopics(subject['name'] as String);
+    // डेटा मैनेजर का कनेक्शन जोड़ें
+    final LocalDataService localDataService = LocalDataService();
+    final topics = localDataService.getTopicsForSubject(subject);
 
     return Scaffold(
-      appBar: AppBar(title: Text(subject['name'] as String)),
+      appBar: AppBar(
+        title: Text(subject),
+      ),
       body: ListView.builder(
-        padding: const EdgeInsets.all(12.0),
-        itemCount: relevantTopics.length,
+        itemCount: topics.length,
         itemBuilder: (context, index) {
-          final topic = relevantTopics[index];
+          final topicName = topics[index];
           return Card(
-            margin: const EdgeInsets.only(bottom: 10),
             child: ListTile(
-              title: Text(topic['name'] as String, style: const TextStyle(fontWeight: FontWeight.bold)),
-              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-              onTap: () => context.push('/sets', extra: topic),
+              title: Text(topicName),
+              trailing: const Icon(Icons.arrow_forward_ios),
+              onTap: () {
+                // SetsScreen पर subject और topic दोनों भेजें
+                context.go(
+                  '/sets',
+                  extra: {'subject': subject, 'topic': topicName},
+                );
+              },
             ),
           );
         },
