@@ -4,7 +4,6 @@ import 'app_state.dart';
 import 'navigation/app_router.dart';
 import 'core/theme.dart';
 
-// Main App Entry Point
 void main() {
   runApp(
     ChangeNotifierProvider(
