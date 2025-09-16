@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-// Yah file yaad rakhti hai ki user ne login kiya hai ya nahi
 class AppState extends ChangeNotifier {
   bool _isLoggedIn = false;
   bool get isLoggedIn => _isLoggedIn;
