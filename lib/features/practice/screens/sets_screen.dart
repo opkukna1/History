@@ -18,7 +18,7 @@ class SetsScreen extends StatelessWidget {
     final numberOfSets = (questions.length / 10).ceil();
 
     return Scaffold(
-      backgroundColor: Colors.blueGrey[50], // नया बैकग्राउंड कलर
+      backgroundColor: Colors.blueGrey[50],
       appBar: AppBar(
         title: Text(topic),
         backgroundColor: Colors.white,
@@ -41,7 +41,8 @@ class SetsScreen extends StatelessWidget {
               title: Text('Set $setIndex', style: const TextStyle(fontWeight: FontWeight.w500)),
               trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
               onTap: () {
-                context.go(
+                // FIX: Using .push() to maintain navigation history
+                context.push(
                   '/practice-mcq',
                   extra: {
                     'subject': subject,
