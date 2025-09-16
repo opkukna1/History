@@ -1,6 +1,6 @@
 // lib/features/practice/screens/practice_mcq_screen.dart
 
-import 'package.flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../../core/local_data_service.dart';
 
 class PracticeMcqScreen extends StatefulWidget {
