@@ -14,7 +14,7 @@ class TopicsScreen extends StatelessWidget {
     final topics = localDataService.getTopicsForSubject(subject);
 
     return Scaffold(
-      backgroundColor: Colors.blueGrey[50], // नया बैकग्राउंड कलर
+      backgroundColor: Colors.blueGrey[50],
       appBar: AppBar(
         title: Text(subject),
         backgroundColor: Colors.white,
@@ -37,7 +37,8 @@ class TopicsScreen extends StatelessWidget {
               title: Text(topicName, style: const TextStyle(fontWeight: FontWeight.w500)),
               trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
               onTap: () {
-                context.go(
+                // FIX: Using .push() to maintain navigation history
+                context.push(
                   '/sets',
                   extra: {'subject': subject, 'topic': topicName},
                 );
