@@ -13,7 +13,7 @@ class LocalDataService {
     if (_isDataLoaded) return;
 
     final rawData = await rootBundle.loadString('assets/question_bank.csv');
-    // Yahan se 'const' hata diya gaya hai
+    // Yahan 'const' nahi hona chahiye
     List<List<dynamic>> listData = CsvToListConverter(eol: '\n').convert(rawData);
     
     _allQuestions = [];
@@ -34,6 +34,7 @@ class LocalDataService {
     print('CSV se ${_allQuestions.length} sawal load ho gaye!');
   }
 
+  // Baki ke functions
   List<Map<String, dynamic>> getSubjects() {
     final subjectNames = _allQuestions.map((q) => q['Subject'] as String).toSet().toList();
     return subjectNames.map((name) => {'id': name, 'name': name}).toList();
