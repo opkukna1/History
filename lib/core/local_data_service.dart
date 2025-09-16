@@ -34,7 +34,6 @@ class LocalDataService {
     print('CSV se ${_allQuestions.length} sawal load ho gaye!');
   }
 
-  // Baki ke functions waise hi rahenge
   List<Map<String, dynamic>> getSubjects() {
     final subjectNames = _allQuestions.map((q) => q['Subject'] as String).toSet().toList();
     return subjectNames.map((name) => {'id': name, 'name': name}).toList();
