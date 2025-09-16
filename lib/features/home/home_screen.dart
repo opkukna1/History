@@ -1,7 +1,10 @@
+// lib/features/home/home_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../app_state.dart';
-import 'package:provider/provider.dart';
+// NOTE: Make sure you have these files in your project
+// import '../../app_state.dart'; 
+// import 'package:provider/provider.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -10,16 +13,11 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Dashboard')),
-      drawer: const AppDrawer(),
+      drawer: const AppDrawer(), // Assuming AppDrawer is in this file or imported
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          // NAYA DEBUG BUTTON
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => context.push('/debug'),
-            child: const Text("Today's Task", style: TextStyle(color: Colors.white)),
-          const SizedBox(height: 16),
+          // डीबग बटन हटा दिया गया है
           _buildWelcomeCard(context),
           const SizedBox(height: 24),
           _buildActionCard(
@@ -143,7 +141,8 @@ class AppDrawer extends StatelessWidget {
           ListTile(leading: const Icon(Icons.note_alt_outlined), title: const Text('Notes'), onTap: () => context.push('/notes_subjects')),
           const Divider(),
           ListTile(leading: const Icon(Icons.logout_outlined), title: const Text('Logout'), onTap: () {
-            Provider.of<AppState>(context, listen: false).logout();
+            // NOTE: Make sure you have Provider and AppState set up for this to work
+            // Provider.of<AppState>(context, listen: false).logout();
             context.go('/');
           }),
         ],
