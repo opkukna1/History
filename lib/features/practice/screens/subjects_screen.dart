@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/local_data_service.dart';
 
-// FIX: Constructor now correctly takes a 'mode'
 class SubjectsScreen extends StatefulWidget {
   final String mode;
   const SubjectsScreen({super.key, required this.mode});
@@ -14,7 +13,6 @@ class SubjectsScreen extends StatefulWidget {
 }
 
 class _SubjectsScreenState extends State<SubjectsScreen> {
-  // FIX: Re-establish the connection to the data service
   final LocalDataService localDataService = LocalDataService();
   late Future<void> _loadingFuture;
 
@@ -36,7 +34,8 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          final subjects = localDataS/Users/rajatsharma/Desktop/opkukna1:History:lib:main.dart:26ervice.getSubjects();
+          // This was the line with the copy-paste error. This is the correct version.
+          final subjects = localDataService.getSubjects();
           return ListView.builder(
             itemCount: subjects.length,
             itemBuilder: (context, index) {
@@ -54,4 +53,3 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
     );
   }
 }
-
