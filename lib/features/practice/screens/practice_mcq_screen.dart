@@ -46,7 +46,7 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
     if (_currentIndex > 0) {
       setState(() {
         _currentIndex--;
-        _isAnswered = false;
+        _isAnswered = false; 
         _selectedOption = null;
       });
     }
@@ -73,26 +73,6 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
     );
   }
 
-  Future<bool> _onWillPop() async {
-    return (await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Are you sure?'),
-        content: const Text('Do you want to exit the quiz?'),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('No'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Yes'),
-          ),
-        ],
-      ),
-    )) ?? false;
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_questions.isEmpty) {
@@ -104,63 +84,61 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
 
     final question = _questions[_currentIndex];
 
-    return WillPopScope(
-      onWillPop: _onWillPop,
-      child: Scaffold(
-        backgroundColor: Colors.teal,
-        appBar: AppBar(
-          title: Text('Set ${widget.set['setIndex']}'),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-        ),
-        body: Container(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              Expanded(
-                child: Card(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  elevation: 8,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          'Question ${_currentIndex + 1}/${_questions.length}',
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          question.questionText,
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 24),
-                        ..._buildOptions(question),
-                        const Spacer(),
-                        if (_isAnswered)
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              'Correct Answer is: ${question.correctOption}',
-                              style: const TextStyle(
-                                  color: Colors.green,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16),
-                            ),
+    // WillPopScope यहाँ से हटा दिया गया है
+    return Scaffold(
+      backgroundColor: Colors.teal,
+      appBar: AppBar(
+        title: Text('Set ${widget.set['setIndex']}'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: Container(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Expanded(
+              child: Card(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                elevation: 8,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Question ${_currentIndex + 1}/${_questions.length}',
+                        style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        question.questionText,
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 24),
+                      ..._buildOptions(question),
+                      const Spacer(),
+                      if (_isAnswered)
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                      ],
-                    ),
+                          child: Text(
+                            'Correct Answer is: ${question.correctOption}',
+                            style: const TextStyle(
+                                color: Colors.green,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
-              _buildBottomNavBar(),
-            ],
-          ),
+            ),
+            _buildBottomNavBar(),
+          ],
         ),
       ),
     );
