@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/local_data_service.dart';
 
-// Ek global instance banayenge taki data baar baar load na ho
-final localDataService = LocalDataService();
-
 class PracticeMcqScreen extends StatefulWidget {
   final Map<String, dynamic> set;
   const PracticeMcqScreen({super.key, required this.set});
@@ -23,18 +20,25 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
   @override
   void initState() {
     super.initState();
-    // Ab questions yahan se aayenge
     _questions = localDataService.getQuestionsForSet(
       widget.set['topicId'] as String,
       widget.set['setIndex'] as int,
     );
   }
 
+  // Helper function to safely get data from map
+  String _getData(Map<String, dynamic> data, String key) {
+    if (data.containsKey(key)) return data[key].toString();
+    return 'Data Not Found';
+  }
+
+
   void _checkAnswer(String option) {
     setState(() {
       _selectedOption = option;
       _showAnswer = true;
-      if (option == _questions[_currentIndex]['CorrectOption']) {
+      // YAHAN PAR GALTI THEEK KAR DI GAYI HAI
+      if (option == _getData(_questions[_currentIndex], 'CorrectOption')) {
         _score++;
       }
     });
@@ -64,10 +68,10 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
     
     final questionData = _questions[_currentIndex];
     final options = [
-      questionData['OptionA'],
-      questionData['OptionB'],
-      questionData['OptionC'],
-      questionData['OptionD'],
+      _getData(questionData, 'OptionA'),
+      _getData(questionData, 'OptionB'),
+      _getData(questionData, 'OptionC'),
+      _getData(questionData, 'OptionD'),
     ];
 
     return Scaffold(
@@ -80,12 +84,13 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              questionData['Question'] as String,
+              _getData(questionData, 'Question'),
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
             ...options.map((option) {
-                bool isCorrect = option == questionData['CorrectAnswer'];
+                // YAHAN PAR BHI GALTI THEEK KAR DI GAYI HAI
+                bool isCorrect = option == _getData(questionData, 'CorrectOption');
                 bool isSelected = option == _selectedOption;
                 Color? tileColor;
                 if (_showAnswer) {
@@ -95,14 +100,15 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
                 return Card(
                   color: tileColor,
                   child: ListTile(
-                    title: Text(option.toString()),
-                    onTap: _showAnswer ? null : () => _checkAnswer(option.toString()),
+                    title: Text(option),
+                    onTap: _showAnswer ? null : () => _checkAnswer(option),
                   ),
                 );
             }).toList(),
             const Spacer(),
             if (_showAnswer)
               ElevatedButton(
+                style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
                 onPressed: _nextQuestion,
                 child: Text(_currentIndex == _questions.length - 1 ? 'Submit' : 'Next'),
               ),
