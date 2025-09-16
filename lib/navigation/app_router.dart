@@ -6,8 +6,8 @@ import '../features/practice/screens/subjects_screen.dart';
 import '../features/practice/screens/topics_screen.dart';
 import '../features/practice/screens/sets_screen.dart';
 import '../features/practice/screens/practice_mcq_screen.dart';
+import '../features/practice/screens/score_screen.dart';
 
-// FIX: Define the router as a top-level variable
 final GoRouter router = GoRouter(
   initialLocation: '/',
   routes: [
@@ -17,7 +17,6 @@ final GoRouter router = GoRouter(
     ),
     GoRoute(
       path: '/subjects',
-      // FIX: Provide the required 'mode' parameter. Assuming "Practice" for this route.
       builder: (context, state) => const SubjectsScreen(mode: "Practice"),
     ),
     GoRoute(
@@ -39,9 +38,21 @@ final GoRouter router = GoRouter(
      GoRoute(
       path: '/practice-mcq',
       builder: (context, state) {
-        // FIX: Pass the data as a single 'set' map, as the screen expects.
         final setData = state.extra as Map<String, dynamic>;
         return PracticeMcqScreen(set: setData);
+      },
+    ),
+    GoRoute(
+      path: '/score',
+      builder: (context, state) {
+        // यहाँ डेटा Integer के रूप में आ रहा है, इसलिए Map<String, int>
+        final data = state.extra as Map<String, int>;
+        final totalQuestions = data['totalQuestions']!;
+        final correctAnswers = data['correctAnswers']!;
+        return ScoreScreen(
+          totalQuestions: totalQuestions,
+          correctAnswers: correctAnswers,
+        );
       },
     ),
   ],
