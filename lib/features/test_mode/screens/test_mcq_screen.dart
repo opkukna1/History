@@ -19,10 +19,8 @@ class _TestMcqScreenState extends State<TestMcqScreen> {
   void initState() {
     super.initState();
     _pageController = PageController();
-    // For now, we get all questions for the topic and take the required count
-    // Later this will be smarter (difficulty, etc.)
     _questions = localDataService
-        .getQuestionsForSet(widget.testSettings['topic'] as String, 0) // Getting Set 1 for now
+        .getQuestionsForSet(widget.testSettings['topic'] as String, 0)
         .take(widget.testSettings['count'] as int)
         .toList();
     _userAnswers.length = _questions.length;
@@ -61,45 +59,30 @@ class _TestMcqScreenState extends State<TestMcqScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  'Question ${index + 1}/${_questions.length}',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                Text('Question ${index + 1}/${_questions.length}'),
                 const SizedBox(height: 8),
-                Text(
-                  questionData['Question'] as String,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
+                Text(questionData['Question'] as String, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 24),
                 ...options.map((option) {
                   return Card(
-                    color: _userAnswers[index] == option
-                        ? Theme.of(context).colorScheme.primaryContainer
-                        : null,
+                    color: _userAnswers[index] == option ? Theme.of(context).colorScheme.primaryContainer : null,
                     child: ListTile(
                       title: Text(option.toString()),
                       onTap: () {
-                        setState(() {
-                          _userAnswers[index] = option.toString();
-                        });
+                        setState(() { _userAnswers[index] = option.toString(); });
                       },
                     ),
                   );
                 }).toList(),
                 const Spacer(),
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
+                  style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
                   onPressed: () {
                     bool isLastQuestion = index == _questions.length - 1;
                     if (isLastQuestion) {
                       _submitTest();
                     } else {
-                      _pageController.nextPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeIn,
-                      );
+                      _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeIn);
                     }
                   },
                   child: Text(index == _questions.length - 1 ? 'Submit Test' : 'Next Question'),
