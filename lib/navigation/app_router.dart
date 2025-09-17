@@ -1,5 +1,3 @@
-// lib/navigation/app_router.dart
-
 import 'package:go_router/go_router.dart';
 import '../features/home/home_screen.dart';
 import '../features/practice/screens/subjects_screen.dart';
@@ -7,6 +5,9 @@ import '../features/practice/screens/topics_screen.dart';
 import '../features/practice/screens/sets_screen.dart';
 import '../features/practice/screens/practice_mcq_screen.dart';
 import '../features/practice/screens/score_screen.dart';
+import '../features/notes/screens/notes_subjects_screen.dart';
+import '../features/notes/screens/notes_topics_screen.dart';
+import '../features/notes/screens/note_viewer_screen.dart';
 
 final GoRouter router = GoRouter(
   initialLocation: '/',
@@ -45,8 +46,6 @@ final GoRouter router = GoRouter(
     GoRoute(
       path: '/score',
       builder: (context, state) {
-        // FIX: This part was causing the error. Now it correctly gets
-        // and passes all the required data to the ScoreScreen.
         final data = state.extra as Map<String, dynamic>;
         final totalQuestions = data['totalQuestions'] as int;
         final correctAnswers = data['correctAnswers'] as int;
@@ -58,6 +57,25 @@ final GoRouter router = GoRouter(
           subject: subject,
           topic: topic,
         );
+      },
+    ),
+    GoRoute(
+      path: '/notes_subjects',
+      builder: (context, state) => const NotesSubjectsScreen(),
+    ),
+    GoRoute(
+      path: '/notes_topics',
+      builder: (context, state) {
+        final subjectData = state.extra as Map<String, dynamic>;
+        return NotesTopicsScreen(subjectData: subjectData);
+      },
+    ),
+    GoRoute(
+      path: '/note_viewer',
+      builder: (context, state) {
+        final topicData = state.extra as Map<String, dynamic>;
+        final int? initialPage = topicData.containsKey('initialPage') ? topicData['initialPage'] as int : null;
+        return NoteViewerScreen(topicData: topicData, initialPage: initialPage);
       },
     ),
   ],
