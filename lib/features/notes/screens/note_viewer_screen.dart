@@ -1,6 +1,6 @@
 // lib/features/notes/screens/note_viewer_screen.dart
 
-import 'package:flutter/material.dart';
+import 'package.flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:history_metallum/helpers/database_helper.dart';
 
@@ -21,6 +21,9 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
   int _totalPages = 0;
 
   List<Highlight> _pageHighlights = [];
+  
+  // FIX: सेलेक्ट किए गए टेक्स्ट को रखने के लिए
+  String? _selectedText;
 
   @override
   void initState() {
@@ -30,6 +33,15 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
       initialPage: widget.initialPage ?? 1,
     );
     _loadDataForPage(widget.initialPage ?? 1);
+
+    // FIX: सिलेक्शन में बदलाव को सुनने के लिए Listener
+    _pdfController.addListener(() {
+      if (mounted) {
+        setState(() {
+          _selectedText = _pdfController.selection.text;
+        });
+      }
+    });
   }
 
   Future<void> _loadDataForPage(int page) async {
@@ -49,13 +61,17 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
     _loadDataForPage(_currentPage);
   }
 
-  void _saveForRevision(String selection) async {
-    if (selection.trim().isEmpty) return;
-    await dbHelper.addHighlight(widget.topicData['filePath'], _currentPage, selection);
+  // FIX: वर्तमान सिलेक्शन को सेव करने का फंक्शन
+  void _saveCurrentSelection() async {
+    if (_selectedText == null || _selectedText!.trim().isEmpty) return;
+    
+    await dbHelper.addHighlight(widget.topicData['filePath'], _currentPage, _selectedText!);
+    
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Saved for revision!')),
     );
-    _loadDataForPage(_currentPage);
+    _pdfController.clearSelection(); // सिलेक्शन हटा दें
+    _loadDataForPage(_currentPage); // लिस्ट को तुरंत अपडेट करें
   }
   
   void _showPageHighlights() {
@@ -65,10 +81,7 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            Text(
-              'Saved Notes (Page $_currentPage)',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
+            Text('Saved Notes (Page $_currentPage)', style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 16),
             Expanded(
               child: ListView.builder(
@@ -102,8 +115,16 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
       appBar: AppBar(
         title: Text(widget.topicData['topicName']),
         actions: [
-          // FIX: सेव किए गए नोट्स देखने के लिए नया बटन
-          // यह बटन तभी दिखेगा जब इस पेज पर कोई नोट सेव होगा
+          // FIX: नया 'Save' बटन जोड़ा गया
+          // यह तभी एक्टिव होगा जब कोई टेक्स्ट सेलेक्ट किया गया हो
+          IconButton(
+            icon: const Icon(Icons.save_alt),
+            tooltip: 'Save Selection',
+            onPressed: (_selectedText != null && _selectedText!.isNotEmpty)
+              ? _saveCurrentSelection
+              : null, // अगर कुछ सेलेक्ट नहीं है तो बटन डिसेबल रहेगा
+          ),
+
           if (_pageHighlights.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.note_alt),
@@ -124,23 +145,7 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
             controller: _pdfController,
             onPageChanged: (page) => _loadDataForPage(page),
             onDocumentLoaded: (doc) => setState(() => _totalPages = doc.pagesCount),
-            contextMenuBuilder: (context, selectableRegionState) {
-              return AdaptiveTextSelectionToolbar.buttonItems(
-                buttonItems: [
-                  ...selectableRegionState.contextMenuButtonItems,
-                  ContextMenuButtonItem(
-                    onPressed: () {
-                      final selection = selectableRegionState.currentTextSelection!;
-                      final selectedText = selection.textInside(selectableRegionState.richTextEditingValue.text);
-                      _saveForRevision(selectedText);
-                      selectableRegionState.hideToolbar();
-                    },
-                    label: 'Save for Revision',
-                  ),
-                ],
-                anchors: selectableRegionState.contextMenuAnchors,
-              );
-            },
+            // FIX: contextMenuBuilder यहाँ से हटा दिया गया है
           ),
           
           if (_totalPages > 0)
@@ -156,8 +161,6 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
                 child: Text('$_currentPage / $_totalPages', style: const TextStyle(color: Colors.white, fontSize: 16)),
               ),
             ),
-          
-          // FIX: FloatingActionButton को यहाँ से हटा दिया गया है
         ],
       ),
     );
