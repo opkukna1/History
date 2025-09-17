@@ -1,3 +1,5 @@
+// lib/features/notes/screens/note_viewer_screen.dart
+
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
@@ -20,7 +22,6 @@ class DrawingPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
-
 
 class NoteViewerScreen extends StatefulWidget {
   final Map<String, dynamic> topicData;
@@ -71,9 +72,26 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
     _loadDataForPage(_currentPage);
   }
 
-  void _clearDrawings() async {
+  void _clearAllDrawingsOnPage() async {
     await dbHelper.clearDrawingsOnPage(widget.topicData['filePath'], _currentPage);
     _loadDataForPage(_currentPage);
+  }
+
+  void _undoLastDrawing() async {
+    if (_currentDrawingPoints.isEmpty) return;
+    final lastNullIndex = _currentDrawingPoints.lastIndexOf(null);
+    if (lastNullIndex == -1) {
+      _currentDrawingPoints.clear();
+    } else {
+      int startIndex = _currentDrawingPoints.sublist(0, lastNullIndex).lastIndexOf(null);
+      startIndex = (startIndex == -1) ? 0 : startIndex + 1;
+      _currentDrawingPoints.removeRange(startIndex, _currentDrawingPoints.length);
+    }
+    await dbHelper.clearDrawingsOnPage(widget.topicData['filePath'], _currentPage);
+    if(_currentDrawingPoints.isNotEmpty) {
+      await dbHelper.addDrawing(widget.topicData['filePath'], _currentPage, _currentDrawingPoints);
+    }
+    setState(() {});
   }
 
   @override
@@ -92,7 +110,7 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
         controller: _pdfController,
         onPageChanged: (page) => _loadDataForPage(page),
         onDocumentLoaded: (doc) => setState(() => _totalPages = doc.pagesCount),
-        // FIX: physics वाली लाइन यहाँ से हटा दी गई है
+        physics: _isDrawMode ? const NeverScrollableScrollPhysics() : const BouncingScrollPhysics(),
       ),
     );
 
@@ -106,9 +124,9 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
             onPressed: () => setState(() => _isDrawMode = !_isDrawMode),
           ),
           IconButton(
-            icon: const Icon(Icons.cleaning_services),
-            tooltip: 'Clear Drawings on this Page',
-            onPressed: _clearDrawings,
+            icon: const Icon(Icons.delete_forever_outlined),
+            tooltip: 'Clear All Drawings on this Page',
+            onPressed: _clearAllDrawingsOnPage,
           ),
           IconButton(
             icon: Icon(_isNightMode ? Icons.wb_sunny : Icons.nightlight_round),
@@ -125,6 +143,14 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
       body: Stack(
         children: [
           pdfView,
+          
+          // FIX: ड्रॉइंग को दिखाने वाला CustomPaint अब हमेशा दिखेगा
+          CustomPaint(
+            painter: DrawingPainter(_currentDrawingPoints),
+            child: SizedBox.expand(),
+          ),
+
+          // FIX: ड्रॉ करने वाला GestureDetector अब सिर्फ Draw Mode में एक्टिव होगा
           if (_isDrawMode)
             GestureDetector(
               onPanStart: (details) {
@@ -132,7 +158,7 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
                   _currentDrawingPoints.add(DrawingPoint(
                     offset: details.localPosition,
                     paint: Paint()
-                      ..color = _selectedPenColor
+                      ..color = _selectedPenColor.withOpacity(0.6)
                       ..strokeWidth = _selectedStrokeWidth
                       ..strokeCap = StrokeCap.round,
                   ));
@@ -143,22 +169,16 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
                   _currentDrawingPoints.add(DrawingPoint(
                     offset: details.localPosition,
                     paint: Paint()
-                      ..color = _selectedPenColor
+                      ..color = _selectedPenColor.withOpacity(0.6)
                       ..strokeWidth = _selectedStrokeWidth
                       ..strokeCap = StrokeCap.round,
                   ));
                 });
               },
               onPanEnd: (details) async {
-                setState(() {
-                   _currentDrawingPoints.add(null); // Line break
-                });
+                _currentDrawingPoints.add(null);
                 await dbHelper.addDrawing(widget.topicData['filePath'], _currentPage, _currentDrawingPoints);
               },
-              child: CustomPaint(
-                painter: DrawingPainter(_currentDrawingPoints),
-                child: SizedBox.expand(),
-              ),
             ),
           
           if (_totalPages > 0)
@@ -202,6 +222,13 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                IconButton(
+                  icon: const Icon(Icons.undo),
+                  onPressed: _undoLastDrawing,
+                  tooltip: 'Undo Last Stroke',
+                ),
+                const VerticalDivider(width: 12, thickness: 1, indent: 8, endIndent: 8),
+
                 ...colors.map((color) => GestureDetector(
                   onTap: () => setState(() => _selectedPenColor = color),
                   child: Container(
