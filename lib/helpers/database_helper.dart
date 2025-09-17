@@ -1,118 +1,83 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+// ... (अन्य इम्पोर्ट्स)
 
-// सेव किए जाने वाले टेक्स्ट के लिए क्लास
-class Highlight {
+// ... (Highlight, Bookmark, DrawingPoint क्लास वैसी ही रहेंगी) ...
+
+// FIX: MCQ बुकमार्क के लिए नई क्लास
+class McqBookmark {
   final int id;
-  final String noteFilePath;
-  final int pageNumber;
-  final String text;
-
-  Highlight({
+  final String subject;
+  final String topic;
+  final String questionText;
+  final String correctOption;
+  
+  McqBookmark({
     required this.id,
-    required this.noteFilePath,
-    required this.pageNumber,
-    required this.text,
+    required this.subject,
+    required this.topic,
+    required this.questionText,
+    required this.correctOption,
   });
 }
 
-// बुकमार्क किए गए पेज के लिए क्लास
-class Bookmark {
-    final int id;
-    final String noteFilePath;
-    final String topicName;
-    final int pageNumber;
-    Bookmark({required this.id, required this.noteFilePath, required this.topicName, required this.pageNumber});
-}
 
 class DatabaseHelper {
-  static final DatabaseHelper instance = DatabaseHelper._init();
-  static Database? _database;
-  DatabaseHelper._init();
-
-  Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDB('notes_v7.db'); // DB का नाम बदला गया
-    return _database!;
-  }
-
-  Future<Database> _initDB(String filePath) async {
+  // ... (database, _initDB फंक्शन वैसे ही रहेंगे) ...
+  _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
-    final path = join(dbPath, filePath);
+    final path = join(dbPath, 'notes_v8.db'); // DB का नाम बदला गया
     return await openDatabase(path, version: 1, onCreate: _createDB);
   }
 
   Future _createDB(Database db, int version) async {
+    // ... (highlights, bookmarks, drawings टेबल वैसी ही रहेंगी) ...
+    
+    // FIX: MCQ बुकमार्क के लिए नई टेबल
     await db.execute('''
-    CREATE TABLE highlights (
+    CREATE TABLE mcq_bookmarks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      noteFilePath TEXT NOT NULL,
-      pageNumber INTEGER NOT NULL,
-      text TEXT NOT NULL
-    )
-    ''');
-    await db.execute('''
-    CREATE TABLE bookmarks (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      noteFilePath TEXT NOT NULL,
-      topicName TEXT NOT NULL,
-      pageNumber INTEGER NOT NULL,
-      UNIQUE(noteFilePath, pageNumber)
+      subject TEXT NOT NULL,
+      topic TEXT NOT NULL,
+      questionText TEXT NOT NULL UNIQUE,
+      correctOption TEXT NOT NULL
     )
     ''');
   }
 
-  // "Save for Revision" वाले टेक्स्ट को सेव करने के लिए
-  Future<void> addHighlight(String noteFilePath, int pageNumber, String text) async {
+  // FIX: MCQ बुकमार्क के लिए नए फंक्शन
+  Future<int> addMcqBookmark(Question question, String subject, String topic) async {
     final db = await instance.database;
-    await db.insert('highlights', {
-      'noteFilePath': noteFilePath,
-      'pageNumber': pageNumber,
-      'text': text,
-    });
-  }
-  
-  // एक पेज पर सेव किए गए सभी टेक्स्ट को पाने के लिए
-  Future<List<Highlight>> getHighlightsForPage(String noteFilePath, int pageNumber) async {
-    final db = await instance.database;
-    final maps = await db.query('highlights', where: 'noteFilePath = ? AND pageNumber = ?', whereArgs: [noteFilePath, pageNumber]);
-    return maps.map((map) => Highlight(
-      id: map['id'] as int,
-      noteFilePath: map['noteFilePath'] as String,
-      pageNumber: map['pageNumber'] as int,
-      text: map['text'] as String,
-    )).toList();
+    return await db.insert('mcq_bookmarks', {
+      'subject': subject,
+      'topic': topic,
+      'questionText': question.questionText,
+      'correctOption': question.correctOption,
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
   }
 
-  // बुकमार्क फंक्शन वैसे ही रहेंगे...
-  Future<void> toggleBookmark(String noteFilePath, String topicName, int pageNumber) async {
+  Future<int> removeMcqBookmark(String questionText) async {
     final db = await instance.database;
-    final isBookmarked = await isPageBookmarked(noteFilePath, pageNumber);
-    if (isBookmarked) {
-      await db.delete('bookmarks', where: 'noteFilePath = ? AND pageNumber = ?', whereArgs: [noteFilePath, pageNumber]);
-    } else {
-      await db.insert('bookmarks', {'noteFilePath': noteFilePath, 'topicName': topicName, 'pageNumber': pageNumber});
-    }
+    return await db.delete('mcq_bookmarks', where: 'questionText = ?', whereArgs: [questionText]);
   }
 
-  Future<bool> isPageBookmarked(String noteFilePath, int pageNumber) async {
+  Future<bool> isMcqBookmarked(String questionText) async {
     final db = await instance.database;
-    final maps = await db.query('bookmarks', where: 'noteFilePath = ? AND pageNumber = ?', whereArgs: [noteFilePath, pageNumber]);
+    final maps = await db.query('mcq_bookmarks', where: 'questionText = ?', whereArgs: [questionText]);
     return maps.isNotEmpty;
   }
-  
-  Future<List<Bookmark>> getBookmarksForSubject(List<String> topicFilePaths) async {
+
+  Future<List<McqBookmark>> getAllMcqBookmarks() async {
     final db = await instance.database;
-    if (topicFilePaths.isEmpty) return [];
-    
-    final placeholders = ('?' * topicFilePaths.length).split('').join(',');
-    final maps = await db.query('bookmarks', where: 'noteFilePath IN ($placeholders)', whereArgs: topicFilePaths);
-    
-    return maps.map((map) => Bookmark(
+    final maps = await db.query('mcq_bookmarks', orderBy: 'subject, topic');
+    return maps.map((map) => McqBookmark(
       id: map['id'] as int,
-      noteFilePath: map['noteFilePath'] as String,
-      topicName: map['topicName'] as String,
-      pageNumber: map['pageNumber'] as int,
+      subject: map['subject'] as String,
+      topic: map['topic'] as String,
+      questionText: map['questionText'] as String,
+      correctOption: map['correctOption'] as String,
     )).toList();
   }
+
+  // ... (बाकी के सभी फंक्शन वैसे ही रहेंगे) ...
 }
