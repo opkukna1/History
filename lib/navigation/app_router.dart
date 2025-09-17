@@ -1,3 +1,5 @@
+// lib/navigation/app_router.dart
+
 import 'package:go_router/go_router.dart';
 import '../features/home/home_screen.dart';
 import '../features/practice/screens/subjects_screen.dart';
@@ -8,6 +10,11 @@ import '../features/practice/screens/score_screen.dart';
 import '../features/notes/screens/notes_subjects_screen.dart';
 import '../features/notes/screens/notes_topics_screen.dart';
 import '../features/notes/screens/note_viewer_screen.dart';
+// FIX: नई बुकमार्क स्क्रीन इम्पोर्ट करें
+import '../features/bookmarks/screens/bookmarks_home_screen.dart';
+import '../features/bookmarks/screens/note_bookmarks_screen.dart';
+import '../features/bookmarks/screens/mcq_bookmarks_screen.dart';
+
 
 final GoRouter router = GoRouter(
   initialLocation: '/',
@@ -77,6 +84,20 @@ final GoRouter router = GoRouter(
         final int? initialPage = topicData.containsKey('initialPage') ? topicData['initialPage'] as int : null;
         return NoteViewerScreen(topicData: topicData, initialPage: initialPage);
       },
+    ),
+    
+    // FIX: बुकमार्क्स के लिए नए Routes
+    GoRoute(
+      path: '/bookmarks_home',
+      builder: (context, state) => const BookmarksHomeScreen(),
+    ),
+    GoRoute(
+      path: '/note_bookmarks',
+      builder: (context, state) => const NoteBookmarksScreen(),
+    ),
+    GoRoute(
+      path: '/mcq_bookmarks',
+      builder: (context, state) => const McqBookmarksScreen(),
     ),
   ],
 );
