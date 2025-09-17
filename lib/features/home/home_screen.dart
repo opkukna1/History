@@ -58,7 +58,6 @@ class _HomeScreenState extends State<HomeScreen> {
               title: 'Practice Mode',
               subtitle: 'Learn topic-wise with sets',
               color: Colors.blue,
-              // bgColor को हटाया क्योंकि ग्लासमोर्फिज्म में इसकी ज़रूरत नहीं
               onTap: () => context.push('/subjects'),
             ),
             const SizedBox(height: 16),
@@ -68,7 +67,6 @@ class _HomeScreenState extends State<HomeScreen> {
               title: 'Test Mode',
               subtitle: 'Generate a real exam experience',
               color: Colors.green,
-              // bgColor को हटाया
               onTap: () => context.push('/generate_test'),
             ),
             const SizedBox(height: 16),
@@ -78,7 +76,6 @@ class _HomeScreenState extends State<HomeScreen> {
               title: 'Notes',
               subtitle: 'Read and download PDF notes',
               color: Colors.orange,
-              // bgColor को हटाया
               onTap: () => context.push('/notes_subjects'),
             ),
             const SizedBox(height: 24),
@@ -95,7 +92,6 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        // FIX: Welcome Card में फिर से हल्का ग्रेडिएंट दिया गया
         gradient: const LinearGradient(
           colors: [Color(0xFFEDE7F6), Color(0xFFF3E5F5)], // Light purple gradient
           begin: Alignment.topLeft,
@@ -132,20 +128,19 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // FIX: Action Card में ग्लासमोर्फिज्म इफ़ेक्ट जोड़ा गया
   Widget _buildActionCard(BuildContext context, {required IconData icon, required String title, required String subtitle, required Color color, required VoidCallback onTap}) {
-    return ClipRRect( // कोने गोल करने के लिए
+    return ClipRRect(
       borderRadius: BorderRadius.circular(16),
-      child: BackdropFilter( // बैकग्राउंड को धुंधला करने के लिए
-        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5), // धुंधलापन एडजस्ट करें
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.3), // हल्का पारदर्शी सफेद रंग
+            color: Colors.white.withOpacity(0.3),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.2)), // हल्का बॉर्डर
+            border: Border.all(color: Colors.white.withOpacity(0.2)),
           ),
-          child: Material( // InkWell के लिए ज़रूरी
-            color: Colors.transparent, // ताकि InkWell का रंग दिखे
+          child: Material(
+            color: Colors.transparent,
             child: InkWell(
               onTap: onTap,
               child: Padding(
@@ -160,12 +155,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           Text(
                             title,
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Colors.black87), // टेक्स्ट का कलर काला किया
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Colors.black87),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             subtitle,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black54), // टेक्स्ट का कलर काला किया
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black54),
                           ),
                         ],
                       ),
@@ -221,6 +216,12 @@ class AppDrawer extends StatelessWidget {
             child: Text('History Metallum', style: TextStyle(color: Colors.white, fontSize: 24)),
           ),
           ListTile(leading: const Icon(Icons.home_outlined), title: const Text('Home'), onTap: () => context.go('/')),
+          
+          // FIX: बुकमार्क्स का लिंक यहाँ जोड़ा गया है
+          ListTile(leading: const Icon(Icons.bookmarks_outlined), title: const Text('Bookmarks'), onTap: () => context.push('/bookmarks_home')),
+          
+          const Divider(),
+
           ListTile(leading: const Icon(Icons.chrome_reader_mode_outlined), title: const Text('Practice Mode'), onTap: () => context.push('/subjects')),
           ListTile(leading: const Icon(Icons.checklist_rtl_rounded), title: const Text('Test Mode'), onTap: () => context.push('/generate_test')),
           ListTile(leading: const Icon(Icons.note_alt_outlined), title: const Text('Notes'), onTap: () => context.push('/notes_subjects')),
@@ -233,3 +234,4 @@ class AppDrawer extends StatelessWidget {
     );
   }
 }
+
