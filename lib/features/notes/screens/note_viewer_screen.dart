@@ -1,6 +1,6 @@
 // lib/features/notes/screens/note_viewer_screen.dart
 
-import 'package.flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:history_metallum/helpers/database_helper.dart';
 
@@ -22,7 +22,6 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
 
   List<Highlight> _pageHighlights = [];
   
-  // FIX: सेलेक्ट किए गए टेक्स्ट को रखने के लिए
   String? _selectedText;
 
   @override
@@ -34,12 +33,24 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
     );
     _loadDataForPage(widget.initialPage ?? 1);
 
-    // FIX: सिलेक्शन में बदलाव को सुनने के लिए Listener
+    // Listener to update the save button's state
     _pdfController.addListener(() {
       if (mounted) {
-        setState(() {
-          _selectedText = _pdfController.selection.text;
-        });
+        // We use try-catch because accessing selection can sometimes throw an error
+        // if no selection exists.
+        try {
+           if (_pdfController.selection.text != _selectedText) {
+              setState(() {
+                _selectedText = _pdfController.selection.text;
+              });
+           }
+        } catch (e) {
+          if (_selectedText != null) {
+            setState(() {
+              _selectedText = null;
+            });
+          }
+        }
       }
     });
   }
@@ -61,7 +72,6 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
     _loadDataForPage(_currentPage);
   }
 
-  // FIX: वर्तमान सिलेक्शन को सेव करने का फंक्शन
   void _saveCurrentSelection() async {
     if (_selectedText == null || _selectedText!.trim().isEmpty) return;
     
@@ -70,8 +80,8 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Saved for revision!')),
     );
-    _pdfController.clearSelection(); // सिलेक्शन हटा दें
-    _loadDataForPage(_currentPage); // लिस्ट को तुरंत अपडेट करें
+    // The selection will clear automatically when the user taps elsewhere
+    _loadDataForPage(_currentPage); // Refresh the list of highlights
   }
   
   void _showPageHighlights() {
@@ -115,14 +125,12 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
       appBar: AppBar(
         title: Text(widget.topicData['topicName']),
         actions: [
-          // FIX: नया 'Save' बटन जोड़ा गया
-          // यह तभी एक्टिव होगा जब कोई टेक्स्ट सेलेक्ट किया गया हो
           IconButton(
             icon: const Icon(Icons.save_alt),
             tooltip: 'Save Selection',
             onPressed: (_selectedText != null && _selectedText!.isNotEmpty)
               ? _saveCurrentSelection
-              : null, // अगर कुछ सेलेक्ट नहीं है तो बटन डिसेबल रहेगा
+              : null,
           ),
 
           if (_pageHighlights.isNotEmpty)
@@ -145,7 +153,6 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
             controller: _pdfController,
             onPageChanged: (page) => _loadDataForPage(page),
             onDocumentLoaded: (doc) => setState(() => _totalPages = doc.pagesCount),
-            // FIX: contextMenuBuilder यहाँ से हटा दिया गया है
           ),
           
           if (_totalPages > 0)
@@ -166,3 +173,4 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
     );
   }
 }
+
