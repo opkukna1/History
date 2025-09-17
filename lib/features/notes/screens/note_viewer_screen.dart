@@ -1,6 +1,6 @@
 // lib/features/notes/screens/note_viewer_screen.dart
 
-import 'dart-ui';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:history_metallum/helpers/database_helper.dart';
