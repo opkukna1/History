@@ -1,3 +1,5 @@
+// lib/features/notes/screens/note_viewer_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:history_metallum/helpers/database_helper.dart';
@@ -14,7 +16,6 @@ class NoteViewerScreen extends StatefulWidget {
 class _NoteViewerScreenState extends State<NoteViewerScreen> {
   late PdfControllerPinch _pdfController;
   final dbHelper = DatabaseHelper.instance;
-  Map<int, List<Highlight>> _highlights = {};
   bool _isBookmarked = false;
   int _currentPage = 1;
   int _totalPages = 0;
@@ -27,15 +28,13 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
       document: PdfDocument.openAsset(widget.topicData['filePath']),
       initialPage: widget.initialPage ?? 1,
     );
-    _loadAllDataForPage(widget.initialPage ?? 1);
+    _loadBookmarkDataForPage(widget.initialPage ?? 1);
   }
 
-  Future<void> _loadAllDataForPage(int page) async {
-    final highlightsFromDB = await dbHelper.getHighlightsForPage(widget.topicData['filePath'], page);
+  Future<void> _loadBookmarkDataForPage(int page) async {
     final isBookmarkedFromDB = await dbHelper.isPageBookmarked(widget.topicData['filePath'], page);
     if (mounted) {
       setState(() {
-        _highlights[page] = highlightsFromDB;
         _isBookmarked = isBookmarkedFromDB;
         _currentPage = page;
       });
@@ -44,56 +43,9 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
   
   void _onToggleBookmark() async {
     await dbHelper.toggleBookmark(widget.topicData['filePath'], widget.topicData['topicName'], _currentPage);
-    _loadAllDataForPage(_currentPage);
-  }
-
-  void _clearHighlights() async {
-    await dbHelper.clearHighlightsOnPage(widget.topicData['filePath'], _currentPage);
-    _loadAllDataForPage(_currentPage);
-  }
-
-  void _onHighlight(PdfTextSelection selection, Color color) async {
-    if (selection.selectionRects == null || selection.selectedText == null) return;
-    for (final rect in selection.selectionRects!) {
-      await dbHelper.addHighlight(widget.topicData['filePath'], _currentPage, rect, color.value.toRadixString(16), selection.selectedText!);
-    }
-    _loadAllDataForPage(_currentPage);
+    _loadBookmarkDataForPage(_currentPage);
   }
   
-  void _showAllHighlights() async {
-    final allHighlights = await dbHelper.getAllHighlightsForNote(widget.topicData['filePath']);
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text('All Highlights', style: Theme.of(context).textTheme.headlineSmall),
-            ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: allHighlights.length,
-                itemBuilder: (context, index) {
-                  final highlight = allHighlights[index];
-                  return ListTile(
-                    leading: Text('Pg ${highlight.pageNumber}'),
-                    title: Text(highlight.text, maxLines: 2, overflow: TextOverflow.ellipsis),
-                    tileColor: Color(int.parse(highlight.color, radix: 16)).withOpacity(0.2),
-                    onTap: () {
-                      _pdfController.jumpToPage(highlight.pageNumber);
-                      Navigator.pop(context);
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   @override
   void dispose() {
     _pdfController.dispose();
@@ -113,45 +65,9 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
         : const ColorFilter.mode(Colors.transparent, BlendMode.dst),
       child: PdfViewPinch(
         controller: _pdfController,
-        onPageChanged: (page) => _loadAllDataForPage(page),
+        onPageChanged: (page) => _loadBookmarkDataForPage(page),
         onDocumentLoaded: (doc) => setState(() => _totalPages = doc.pagesCount),
-        builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
-          options: const DefaultBuilderOptions(),
-          builder: (context, pinchBuilders, state) {
-            return Stack(
-              children: [
-                pinchBuilders.pageBuilder(context, state),
-                ...(_highlights[_currentPage] ?? []).map((highlight) {
-                    return Positioned.fromRect(
-                      rect: highlight.rect,
-                      child: Container(color: Color(int.parse(highlight.color, radix: 16)).withOpacity(0.4)),
-                    );
-                }).toList(),
-              ],
-            );
-          },
-        ),
-        onTextSelected: (text) {
-          if (text == null) return;
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Highlight with color'),
-              content: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [Colors.yellow, Colors.lightBlue, Colors.pink, Colors.lightGreen].map((color) {
-                  return GestureDetector(
-                    onTap: () {
-                      _onHighlight(text, color);
-                      Navigator.pop(context);
-                    },
-                    child: CircleAvatar(backgroundColor: color, radius: 20),
-                  );
-                }).toList(),
-              ),
-            ),
-          );
-        },
+        // FIX: onTextSelected और builders को हटा दिया गया है क्योंकि वे एरर दे रहे थे
       ),
     );
 
@@ -159,11 +75,6 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
       appBar: AppBar(
         title: Text(widget.topicData['topicName']),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.list_alt),
-            tooltip: 'View All Highlights',
-            onPressed: _showAllHighlights,
-          ),
           IconButton(
             icon: Icon(_isNightMode ? Icons.wb_sunny : Icons.nightlight_round),
             tooltip: 'Toggle Night Mode',
