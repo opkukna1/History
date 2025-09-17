@@ -1,6 +1,8 @@
+// lib/features/notes/screens/notes_topics_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:history_metallum/helpers/database_helper.dart';
+import '../../../helpers/database_helper.dart'; // FIX: इम्पोर्ट जोड़ा गया
 
 class NotesTopicsScreen extends StatefulWidget {
   final Map<String, dynamic> subjectData;
@@ -45,11 +47,9 @@ class _NotesTopicsScreenState extends State<NotesTopicsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Revision Section
             if (_bookmarkedPages.isNotEmpty)
               _buildRevisionSection(context),
 
-            // All Topics Section
             Padding(
               padding: const EdgeInsets.all(12.0),
               child: Text(
@@ -109,7 +109,7 @@ class _NotesTopicsScreenState extends State<NotesTopicsScreen> {
                   context.push('/note_viewer', extra: {
                     'topicName': bookmark.topicName,
                     'filePath': bookmark.noteFilePath,
-                    'initialPage': bookmark.pageNumber, // सीधे उस पेज पर जाने के लिए
+                    'initialPage': bookmark.pageNumber,
                   },);
                 },
               ),
