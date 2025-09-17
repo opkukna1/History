@@ -79,22 +79,18 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
 
   void _undoLastDrawing() async {
     if (_currentDrawingPoints.isEmpty) return;
-
     final lastNullIndex = _currentDrawingPoints.lastIndexOf(null);
     if (lastNullIndex == -1) {
       _currentDrawingPoints.clear();
     } else {
       int startIndex = _currentDrawingPoints.sublist(0, lastNullIndex).lastIndexOf(null);
       startIndex = (startIndex == -1) ? 0 : startIndex + 1;
-      
       _currentDrawingPoints.removeRange(startIndex, _currentDrawingPoints.length);
     }
-
     await dbHelper.clearDrawingsOnPage(widget.topicData['filePath'], _currentPage);
     if(_currentDrawingPoints.isNotEmpty) {
       await dbHelper.addDrawing(widget.topicData['filePath'], _currentPage, _currentDrawingPoints);
     }
-    
     setState(() {});
   }
 
@@ -106,6 +102,7 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // PDF व्यूअर को एक अलग विजेट में बनाया
     Widget pdfView = ColorFiltered(
       colorFilter: _isNightMode 
         ? const ColorFilter.matrix([-1, 0, 0, 0, 255, 0,-1, 0, 0, 255, 0, 0,-1, 0, 255, 0, 0, 0, 1, 0])
@@ -114,7 +111,6 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
         controller: _pdfController,
         onPageChanged: (page) => _loadDataForPage(page),
         onDocumentLoaded: (doc) => setState(() => _totalPages = doc.pagesCount),
-        // FIX: physics वाली लाइन यहाँ से हटा दी गई है
       ),
     );
 
@@ -146,11 +142,20 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
       ),
       body: Stack(
         children: [
-          pdfView,
-          CustomPaint(
-            painter: DrawingPainter(_currentDrawingPoints),
-            child: SizedBox.expand(),
+          // FIX: PDF स्क्रॉलिंग को ठीक करने के लिए
+          // जब ड्रॉ मोड बंद हो, तो PDF को सीधे Stack में रखें
+          // जब ड्रॉ मोड चालू हो, तो PDF को AbsorbPointer में रखें
+          _isDrawMode ? AbsorbPointer(child: pdfView) : pdfView,
+
+          // ड्रॉइंग को दिखाने वाला CustomPaint हमेशा दिखेगा और टच को इग्नोर करेगा
+          IgnorePointer(
+            child: CustomPaint(
+              painter: DrawingPainter(_currentDrawingPoints),
+              child: SizedBox.expand(),
+            ),
           ),
+
+          // ड्रॉ करने वाला GestureDetector अब सिर्फ Draw Mode में एक्टिव होगा
           if (_isDrawMode)
             GestureDetector(
               onPanStart: (details) {
@@ -158,7 +163,7 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
                   _currentDrawingPoints.add(DrawingPoint(
                     offset: details.localPosition,
                     paint: Paint()
-                      ..color = _selectedPenColor.withOpacity(0.6)
+                      ..color = _selectedPenColor.withOpacity(0.6) // पारदर्शी कलर
                       ..strokeWidth = _selectedStrokeWidth
                       ..strokeCap = StrokeCap.round,
                   ));
@@ -169,7 +174,7 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
                   _currentDrawingPoints.add(DrawingPoint(
                     offset: details.localPosition,
                     paint: Paint()
-                      ..color = _selectedPenColor.withOpacity(0.6)
+                      ..color = _selectedPenColor.withOpacity(0.6) // पारदर्शी कलर
                       ..strokeWidth = _selectedStrokeWidth
                       ..strokeCap = StrokeCap.round,
                   ));
@@ -212,50 +217,56 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
         left: 0,
         right: 0,
         child: Center(
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10)],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.undo),
-                  onPressed: _undoLastDrawing,
-                  tooltip: 'Undo Last Stroke',
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(30),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: Colors.white.withOpacity(0.3)),
                 ),
-                const VerticalDivider(width: 12, thickness: 1, indent: 8, endIndent: 8),
-                ...colors.map((color) => GestureDetector(
-                  onTap: () => setState(() => _selectedPenColor = color),
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 6),
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                      border: _selectedPenColor == color ? Border.all(color: Colors.black, width: 3) : null,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.undo, color: Colors.white),
+                      onPressed: _undoLastDrawing,
+                      tooltip: 'Undo Last Stroke',
                     ),
-                    width: 32,
-                    height: 32,
-                  ),
-                )).toList(),
-                const VerticalDivider(width: 24, thickness: 1, indent: 8, endIndent: 8),
-                ...strokeWidths.map((width) => GestureDetector(
-                  onTap: () => setState(() => _selectedStrokeWidth = width),
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 6),
-                    decoration: BoxDecoration(
-                      color: _selectedStrokeWidth == width ? Colors.blue.withOpacity(0.3) : Colors.transparent,
-                      shape: BoxShape.circle,
-                    ),
-                    width: 32,
-                    height: 32,
-                    child: Center(child: Icon(Icons.circle, size: width * 1.5)),
-                  ),
-                )).toList(),
-              ],
+                    const VerticalDivider(width: 12, thickness: 1, indent: 8, endIndent: 8),
+                    ...colors.map((color) => GestureDetector(
+                      onTap: () => setState(() => _selectedPenColor = color),
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 6),
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                          border: _selectedPenColor == color ? Border.all(color: Colors.white, width: 3) : null,
+                        ),
+                        width: 32,
+                        height: 32,
+                      ),
+                    )).toList(),
+                    const VerticalDivider(width: 24, thickness: 1, indent: 8, endIndent: 8),
+                    ...strokeWidths.map((width) => GestureDetector(
+                      onTap: () => setState(() => _selectedStrokeWidth = width),
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 6),
+                        decoration: BoxDecoration(
+                          color: _selectedStrokeWidth == width ? Colors.blue.withOpacity(0.3) : Colors.transparent,
+                          shape: BoxShape.circle,
+                        ),
+                        width: 32,
+                        height: 32,
+                        child: Center(child: Icon(Icons.circle, size: width * 1.5, color: Colors.white70)),
+                      ),
+                    )).toList(),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
