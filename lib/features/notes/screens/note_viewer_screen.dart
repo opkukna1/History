@@ -1,27 +1,8 @@
 // lib/features/notes/screens/note_viewer_screen.dart
 
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:history_metallum/helpers/database_helper.dart';
-
-// ड्रॉइंग कैनवास बनाने के लिए कस्टम पेंटर
-class DrawingPainter extends CustomPainter {
-  final List<DrawingPoint?> points;
-  DrawingPainter(this.points);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    for (int i = 0; i < points.length - 1; i++) {
-      if (points[i] != null && points[i + 1] != null) {
-        canvas.drawLine(points[i]!.offset, points[i + 1]!.offset, points[i]!.paint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
 
 class NoteViewerScreen extends StatefulWidget {
   final Map<String, dynamic> topicData;
@@ -38,13 +19,9 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
   bool _isBookmarked = false;
   int _currentPage = 1;
   int _totalPages = 0;
-  bool _isNightMode = false;
-  
-  bool _isDrawMode = false;
-  List<DrawingPoint?> _currentDrawingPoints = [];
-  Color _selectedPenColor = Colors.red;
-  double _selectedStrokeWidth = 4.0;
-  
+
+  List<Highlight> _pageHighlights = [];
+
   @override
   void initState() {
     super.initState();
@@ -57,12 +34,12 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
 
   Future<void> _loadDataForPage(int page) async {
     final isBookmarkedFromDB = await dbHelper.isPageBookmarked(widget.topicData['filePath'], page);
-    final drawingsFromDB = await dbHelper.getDrawingsForPage(widget.topicData['filePath'], page);
+    final highlightsFromDB = await dbHelper.getHighlightsForPage(widget.topicData['filePath'], page);
     if (mounted) {
       setState(() {
         _isBookmarked = isBookmarkedFromDB;
+        _pageHighlights = highlightsFromDB;
         _currentPage = page;
-        _currentDrawingPoints = drawingsFromDB;
       });
     }
   }
@@ -72,26 +49,45 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
     _loadDataForPage(_currentPage);
   }
 
-  void _clearAllDrawingsOnPage() async {
-    await dbHelper.clearDrawingsOnPage(widget.topicData['filePath'], _currentPage);
+  void _saveForRevision(String selection) async {
+    if (selection.trim().isEmpty) return;
+    await dbHelper.addHighlight(widget.topicData['filePath'], _currentPage, selection);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Saved for revision!')),
+    );
     _loadDataForPage(_currentPage);
   }
-
-  void _undoLastDrawing() async {
-    if (_currentDrawingPoints.isEmpty) return;
-    final lastNullIndex = _currentDrawingPoints.lastIndexOf(null);
-    if (lastNullIndex == -1) {
-      _currentDrawingPoints.clear();
-    } else {
-      int startIndex = _currentDrawingPoints.sublist(0, lastNullIndex).lastIndexOf(null);
-      startIndex = (startIndex == -1) ? 0 : startIndex + 1;
-      _currentDrawingPoints.removeRange(startIndex, _currentDrawingPoints.length);
-    }
-    await dbHelper.clearDrawingsOnPage(widget.topicData['filePath'], _currentPage);
-    if(_currentDrawingPoints.isNotEmpty) {
-      await dbHelper.addDrawing(widget.topicData['filePath'], _currentPage, _currentDrawingPoints);
-    }
-    setState(() {});
+  
+  void _showPageHighlights() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Text(
+              'Saved Notes (Page $_currentPage)',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _pageHighlights.length,
+                itemBuilder: (context, index) {
+                  return Card(
+                    margin: const EdgeInsets.symmetric(vertical: 6.0),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Text(_pageHighlights[index].text, style: const TextStyle(fontSize: 16)),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      )
+    );
   }
 
   @override
@@ -102,37 +98,19 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // PDF व्यूअर को एक अलग विजेट में बनाया
-    Widget pdfView = ColorFiltered(
-      colorFilter: _isNightMode 
-        ? const ColorFilter.matrix([-1, 0, 0, 0, 255, 0,-1, 0, 0, 255, 0, 0,-1, 0, 255, 0, 0, 0, 1, 0])
-        : const ColorFilter.mode(Colors.transparent, BlendMode.dst),
-      child: PdfViewPinch(
-        controller: _pdfController,
-        onPageChanged: (page) => _loadDataForPage(page),
-        onDocumentLoaded: (doc) => setState(() => _totalPages = doc.pagesCount),
-      ),
-    );
-
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.topicData['topicName']),
         actions: [
-          IconButton(
-            icon: Icon(Icons.edit, color: _isDrawMode ? Colors.blue : null),
-            tooltip: 'Draw Mode',
-            onPressed: () => setState(() => _isDrawMode = !_isDrawMode),
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_forever_outlined),
-            tooltip: 'Clear All Drawings on this Page',
-            onPressed: _clearAllDrawingsOnPage,
-          ),
-          IconButton(
-            icon: Icon(_isNightMode ? Icons.wb_sunny : Icons.nightlight_round),
-            tooltip: 'Toggle Night Mode',
-            onPressed: () => setState(() => _isNightMode = !_isNightMode),
-          ),
+          // FIX: सेव किए गए नोट्स देखने के लिए नया बटन
+          // यह बटन तभी दिखेगा जब इस पेज पर कोई नोट सेव होगा
+          if (_pageHighlights.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.note_alt),
+              tooltip: 'View Saved Notes',
+              onPressed: _showPageHighlights,
+            ),
+          
           IconButton(
             icon: Icon(_isBookmarked ? Icons.bookmark : Icons.bookmark_border),
             tooltip: 'Bookmark this Page',
@@ -142,49 +120,28 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
       ),
       body: Stack(
         children: [
-          // FIX: PDF स्क्रॉलिंग को ठीक करने के लिए
-          // जब ड्रॉ मोड बंद हो, तो PDF को सीधे Stack में रखें
-          // जब ड्रॉ मोड चालू हो, तो PDF को AbsorbPointer में रखें
-          _isDrawMode ? AbsorbPointer(child: pdfView) : pdfView,
-
-          // ड्रॉइंग को दिखाने वाला CustomPaint हमेशा दिखेगा और टच को इग्नोर करेगा
-          IgnorePointer(
-            child: CustomPaint(
-              painter: DrawingPainter(_currentDrawingPoints),
-              child: SizedBox.expand(),
-            ),
+          PdfViewPinch(
+            controller: _pdfController,
+            onPageChanged: (page) => _loadDataForPage(page),
+            onDocumentLoaded: (doc) => setState(() => _totalPages = doc.pagesCount),
+            contextMenuBuilder: (context, selectableRegionState) {
+              return AdaptiveTextSelectionToolbar.buttonItems(
+                buttonItems: [
+                  ...selectableRegionState.contextMenuButtonItems,
+                  ContextMenuButtonItem(
+                    onPressed: () {
+                      final selection = selectableRegionState.currentTextSelection!;
+                      final selectedText = selection.textInside(selectableRegionState.richTextEditingValue.text);
+                      _saveForRevision(selectedText);
+                      selectableRegionState.hideToolbar();
+                    },
+                    label: 'Save for Revision',
+                  ),
+                ],
+                anchors: selectableRegionState.contextMenuAnchors,
+              );
+            },
           ),
-
-          // ड्रॉ करने वाला GestureDetector अब सिर्फ Draw Mode में एक्टिव होगा
-          if (_isDrawMode)
-            GestureDetector(
-              onPanStart: (details) {
-                setState(() {
-                  _currentDrawingPoints.add(DrawingPoint(
-                    offset: details.localPosition,
-                    paint: Paint()
-                      ..color = _selectedPenColor.withOpacity(0.6) // पारदर्शी कलर
-                      ..strokeWidth = _selectedStrokeWidth
-                      ..strokeCap = StrokeCap.round,
-                  ));
-                });
-              },
-              onPanUpdate: (details) {
-                 setState(() {
-                  _currentDrawingPoints.add(DrawingPoint(
-                    offset: details.localPosition,
-                    paint: Paint()
-                      ..color = _selectedPenColor.withOpacity(0.6) // पारदर्शी कलर
-                      ..strokeWidth = _selectedStrokeWidth
-                      ..strokeCap = StrokeCap.round,
-                  ));
-                });
-              },
-              onPanEnd: (details) async {
-                _currentDrawingPoints.add(null);
-                await dbHelper.addDrawing(widget.topicData['filePath'], _currentPage, _currentDrawingPoints);
-              },
-            ),
           
           if (_totalPages > 0)
             Align(
@@ -200,76 +157,8 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
               ),
             ),
           
-          _buildDrawingPalette(),
+          // FIX: FloatingActionButton को यहाँ से हटा दिया गया है
         ],
-      ),
-    );
-  }
-
-  Widget _buildDrawingPalette() {
-    final colors = [Colors.red, Colors.green, Colors.blue, Colors.black];
-    final strokeWidths = [4.0, 8.0, 12.0];
-
-    return Visibility(
-      visible: _isDrawMode,
-      child: Positioned(
-        bottom: 20,
-        left: 0,
-        right: 0,
-        child: Center(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(30),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: Colors.white.withOpacity(0.3)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.undo, color: Colors.white),
-                      onPressed: _undoLastDrawing,
-                      tooltip: 'Undo Last Stroke',
-                    ),
-                    const VerticalDivider(width: 12, thickness: 1, indent: 8, endIndent: 8),
-                    ...colors.map((color) => GestureDetector(
-                      onTap: () => setState(() => _selectedPenColor = color),
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 6),
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                          border: _selectedPenColor == color ? Border.all(color: Colors.white, width: 3) : null,
-                        ),
-                        width: 32,
-                        height: 32,
-                      ),
-                    )).toList(),
-                    const VerticalDivider(width: 24, thickness: 1, indent: 8, endIndent: 8),
-                    ...strokeWidths.map((width) => GestureDetector(
-                      onTap: () => setState(() => _selectedStrokeWidth = width),
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 6),
-                        decoration: BoxDecoration(
-                          color: _selectedStrokeWidth == width ? Colors.blue.withOpacity(0.3) : Colors.transparent,
-                          shape: BoxShape.circle,
-                        ),
-                        width: 32,
-                        height: 32,
-                        child: Center(child: Icon(Icons.circle, size: width * 1.5, color: Colors.white70)),
-                      ),
-                    )).toList(),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }
