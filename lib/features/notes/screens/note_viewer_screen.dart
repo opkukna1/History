@@ -1,6 +1,6 @@
 // lib/features/notes/screens/note_viewer_screen.dart
 
-import 'dart:ui';
+import 'dart-ui';
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:history_metallum/helpers/database_helper.dart';
@@ -79,18 +79,22 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
 
   void _undoLastDrawing() async {
     if (_currentDrawingPoints.isEmpty) return;
+
     final lastNullIndex = _currentDrawingPoints.lastIndexOf(null);
     if (lastNullIndex == -1) {
       _currentDrawingPoints.clear();
     } else {
       int startIndex = _currentDrawingPoints.sublist(0, lastNullIndex).lastIndexOf(null);
       startIndex = (startIndex == -1) ? 0 : startIndex + 1;
+      
       _currentDrawingPoints.removeRange(startIndex, _currentDrawingPoints.length);
     }
+
     await dbHelper.clearDrawingsOnPage(widget.topicData['filePath'], _currentPage);
     if(_currentDrawingPoints.isNotEmpty) {
       await dbHelper.addDrawing(widget.topicData['filePath'], _currentPage, _currentDrawingPoints);
     }
+    
     setState(() {});
   }
 
@@ -110,7 +114,7 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
         controller: _pdfController,
         onPageChanged: (page) => _loadDataForPage(page),
         onDocumentLoaded: (doc) => setState(() => _totalPages = doc.pagesCount),
-        physics: _isDrawMode ? const NeverScrollableScrollPhysics() : const BouncingScrollPhysics(),
+        // FIX: physics वाली लाइन यहाँ से हटा दी गई है
       ),
     );
 
@@ -143,14 +147,10 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
       body: Stack(
         children: [
           pdfView,
-          
-          // FIX: ड्रॉइंग को दिखाने वाला CustomPaint अब हमेशा दिखेगा
           CustomPaint(
             painter: DrawingPainter(_currentDrawingPoints),
             child: SizedBox.expand(),
           ),
-
-          // FIX: ड्रॉ करने वाला GestureDetector अब सिर्फ Draw Mode में एक्टिव होगा
           if (_isDrawMode)
             GestureDetector(
               onPanStart: (details) {
@@ -228,7 +228,6 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
                   tooltip: 'Undo Last Stroke',
                 ),
                 const VerticalDivider(width: 12, thickness: 1, indent: 8, endIndent: 8),
-
                 ...colors.map((color) => GestureDetector(
                   onTap: () => setState(() => _selectedPenColor = color),
                   child: Container(
