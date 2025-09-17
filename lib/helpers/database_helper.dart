@@ -1,16 +1,15 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'dart:ui';
-import 'dart:convert'; // JSON encoding के लिए
+import 'dart:convert';
 
-// DrawingPoint क्लास ड्रॉइंग के हर पॉइंट की जानकारी रखेगी
 class DrawingPoint {
   final Paint paint;
   final Offset offset;
   DrawingPoint({required this.offset, required this.paint});
 }
 
-// बाकी की क्लास (Highlight, Bookmark) वैसी ही रहेंगी...
+// ... (Highlight and Bookmark classes remain the same) ...
 class Highlight {
   final int id;
   final String noteFilePath;
@@ -33,7 +32,7 @@ class DatabaseHelper {
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('notes_v5.db'); // DB का नाम बदला गया
+    _database = await _initDB('notes_v5.db');
     return _database!;
   }
 
@@ -44,31 +43,16 @@ class DatabaseHelper {
   }
 
   Future _createDB(Database db, int version) async {
-    // पुरानी टेबल्स वैसी ही रहेंगी
-    await db.execute('''
-    CREATE TABLE highlights (id INTEGER PRIMARY KEY AUTOINCREMENT, noteFilePath TEXT NOT NULL, pageNumber INTEGER NOT NULL, text TEXT NOT NULL)
-    ''');
-    await db.execute('''
-    CREATE TABLE bookmarks (id INTEGER PRIMARY KEY AUTOINCREMENT, noteFilePath TEXT NOT NULL, topicName TEXT NOT NULL, pageNumber INTEGER NOT NULL, UNIQUE(noteFilePath, pageNumber))
-    ''');
-    
-    // FIX: ड्रॉइंग्स के लिए नई टेबल
-    await db.execute('''
-    CREATE TABLE drawings (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      noteFilePath TEXT NOT NULL,
-      pageNumber INTEGER NOT NULL,
-      points_json TEXT NOT NULL
-    )
-    ''');
+    await db.execute('CREATE TABLE highlights (id INTEGER PRIMARY KEY AUTOINCREMENT, noteFilePath TEXT NOT NULL, pageNumber INTEGER NOT NULL, text TEXT NOT NULL)');
+    await db.execute('CREATE TABLE bookmarks (id INTEGER PRIMARY KEY AUTOINCREMENT, noteFilePath TEXT NOT NULL, topicName TEXT NOT NULL, pageNumber INTEGER NOT NULL, UNIQUE(noteFilePath, pageNumber))');
+    await db.execute('CREATE TABLE drawings (id INTEGER PRIMARY KEY AUTOINCREMENT, noteFilePath TEXT NOT NULL, pageNumber INTEGER NOT NULL, points_json TEXT NOT NULL)');
   }
 
-  // FIX: ड्रॉइंग को सेव करने के लिए नए फंक्शन
   Future<void> addDrawing(String noteFilePath, int pageNumber, List<DrawingPoint?> points) async {
     final db = await instance.database;
-    // points को JSON स्ट्रिंग में कन्वर्ट करें
-    List<Map<String, dynamic>> jsonPoints = points.map((p) {
-      if (p == null) return {}; // Null points for line breaks
+    // FIX: यहाँ <Map<String, dynamic>> जोड़ा गया है
+    List<Map<String, dynamic>> jsonPoints = points.map<Map<String, dynamic>>((p) {
+      if (p == null) return {};
       return {
         'dx': p.offset.dx,
         'dy': p.offset.dy,
@@ -77,6 +61,10 @@ class DatabaseHelper {
       };
     }).toList();
     
+    // Clear previous drawings for this page before adding new ones
+    await db.delete('drawings', where: 'noteFilePath = ? AND pageNumber = ?', whereArgs: [noteFilePath, pageNumber]);
+    
+    // Insert the new complete drawing
     await db.insert('drawings', {
       'noteFilePath': noteFilePath,
       'pageNumber': pageNumber,
@@ -84,14 +72,13 @@ class DatabaseHelper {
     });
   }
 
-  // FIX: ड्रॉइंग को पाने के लिए नया फंक्शन
   Future<List<DrawingPoint?>> getDrawingsForPage(String noteFilePath, int pageNumber) async {
     final db = await instance.database;
     final maps = await db.query('drawings', where: 'noteFilePath = ? AND pageNumber = ?', whereArgs: [noteFilePath, pageNumber]);
     
     List<DrawingPoint?> points = [];
-    for (var map in maps) {
-      List<dynamic> jsonPoints = json.decode(map['points_json'] as String);
+    if (maps.isNotEmpty) {
+      List<dynamic> jsonPoints = json.decode(maps.first['points_json'] as String);
       for (var p in jsonPoints) {
         if (p.isEmpty) {
           points.add(null);
@@ -110,14 +97,12 @@ class DatabaseHelper {
     return points;
   }
 
-  // FIX: ड्रॉइंग को क्लियर करने के लिए नया फंक्शन
   Future<void> clearDrawingsOnPage(String noteFilePath, int pageNumber) async {
     final db = await instance.database;
     await db.delete('drawings', where: 'noteFilePath = ? AND pageNumber = ?', whereArgs: [noteFilePath, pageNumber]);
   }
   
-  // बाकी के सभी फंक्शन वैसे ही रहेंगे...
-  // ... (Highlight and Bookmark functions are omitted for brevity)
+  // ... (Other functions remain the same) ...
   Future<void> addHighlight(String noteFilePath, int pageNumber, String text) async { /* ... */ }
   Future<List<Highlight>> getAllHighlightsForNote(String noteFilePath) async { /* ... */ return []; }
   Future<void> toggleBookmark(String noteFilePath, String topicName, int pageNumber) async { /* ... */ }
