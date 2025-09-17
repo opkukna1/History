@@ -1,9 +1,26 @@
-// lib/features/notes/screens/note_viewer_screen.dart
-
-import 'dart:async'; // Listener के लिए ज़रूरी
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:history_metallum/helpers/database_helper.dart';
+
+// ड्रॉइंग कैनवास बनाने के लिए कस्टम पेंटर
+class DrawingPainter extends CustomPainter {
+  final List<DrawingPoint?> points;
+  DrawingPainter(this.points);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (int i = 0; i < points.length - 1; i++) {
+      if (points[i] != null && points[i + 1] != null) {
+        canvas.drawLine(points[i]!.offset, points[i + 1]!.offset, points[i]!.paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
 
 class NoteViewerScreen extends StatefulWidget {
   final Map<String, dynamic> topicData;
@@ -17,17 +34,17 @@ class NoteViewerScreen extends StatefulWidget {
 class _NoteViewerScreenState extends State<NoteViewerScreen> {
   late PdfControllerPinch _pdfController;
   final dbHelper = DatabaseHelper.instance;
-  Map<int, List<Highlight>> _highlights = {};
   bool _isBookmarked = false;
   int _currentPage = 1;
   int _totalPages = 0;
   bool _isNightMode = false;
   
-  // FIX: नए स्टेट वेरिएबल्स
-  bool _isHighlightMode = false;
-  Color _selectedColor = Colors.yellow;
-  StreamSubscription<PdfTextSelection?>? _selectionSubscription;
-
+  // FIX: ड्रॉइंग के लिए नए स्टेट वेरिएबल्स
+  bool _isDrawMode = false;
+  List<DrawingPoint?> _currentDrawingPoints = [];
+  Color _selectedPenColor = Colors.red;
+  double _selectedStrokeWidth = 4.0;
+  
   @override
   void initState() {
     super.initState();
@@ -35,84 +52,33 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
       document: PdfDocument.openAsset(widget.topicData['filePath']),
       initialPage: widget.initialPage ?? 1,
     );
-    _loadAllDataForPage(widget.initialPage ?? 1);
-
-    // FIX: टेक्स्ट सिलेक्शन को सुनने के लिए Listener
-    _selectionSubscription = _pdfController.selectionChanges.listen((selection) {
-      if (selection != null && _isHighlightMode) {
-        _onHighlight(selection, _selectedColor);
-        _pdfController.clearSelection(); // हाईलाइट करने के बाद सिलेक्शन हटा दें
-      }
-    });
+    _loadDataForPage(widget.initialPage ?? 1);
   }
 
-  Future<void> _loadAllDataForPage(int page) async {
-    final highlightsFromDB = await dbHelper.getHighlightsForPage(widget.topicData['filePath'], page);
+  Future<void> _loadDataForPage(int page) async {
     final isBookmarkedFromDB = await dbHelper.isPageBookmarked(widget.topicData['filePath'], page);
+    final drawingsFromDB = await dbHelper.getDrawingsForPage(widget.topicData['filePath'], page);
     if (mounted) {
       setState(() {
-        _highlights[page] = highlightsFromDB;
         _isBookmarked = isBookmarkedFromDB;
         _currentPage = page;
+        _currentDrawingPoints = drawingsFromDB;
       });
     }
   }
   
   void _onToggleBookmark() async {
     await dbHelper.toggleBookmark(widget.topicData['filePath'], widget.topicData['topicName'], _currentPage);
-    _loadAllDataForPage(_currentPage);
+    _loadDataForPage(_currentPage);
   }
 
-  void _clearHighlights() async {
-    await dbHelper.clearHighlightsOnPage(widget.topicData['filePath'], _currentPage);
-    _loadAllDataForPage(_currentPage);
-  }
-
-  void _onHighlight(PdfTextSelection selection, Color color) async {
-    if (selection.selectionRects == null || selection.selectedText == null) return;
-    for (final rect in selection.selectionRects!) {
-      await dbHelper.addHighlight(widget.topicData['filePath'], _currentPage, rect, color.value.toRadixString(16), selection.selectedText!);
-    }
-    _loadAllDataForPage(_currentPage);
-  }
-  
-  void _showAllHighlights() async {
-    final allHighlights = await dbHelper.getAllHighlightsForNote(widget.topicData['filePath']);
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text('All Highlights', style: Theme.of(context).textTheme.headlineSmall),
-            ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: allHighlights.length,
-                itemBuilder: (context, index) {
-                  final highlight = allHighlights[index];
-                  return ListTile(
-                    leading: Text('Pg ${highlight.pageNumber}'),
-                    title: Text(highlight.text, maxLines: 2, overflow: TextOverflow.ellipsis),
-                    tileColor: Color(int.parse(highlight.color, radix: 16)).withOpacity(0.2),
-                    onTap: () {
-                      _pdfController.jumpToPage(highlight.pageNumber);
-                      Navigator.pop(context);
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
-        );
-      },
-    );
+  void _clearDrawings() async {
+    await dbHelper.clearDrawingsOnPage(widget.topicData['filePath'], _currentPage);
+    _loadDataForPage(_currentPage);
   }
 
   @override
   void dispose() {
-    _selectionSubscription?.cancel(); // Listener को हटाना ज़रूरी
     _pdfController.dispose();
     super.dispose();
   }
@@ -125,24 +91,10 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
         : const ColorFilter.mode(Colors.transparent, BlendMode.dst),
       child: PdfViewPinch(
         controller: _pdfController,
-        onPageChanged: (page) => _loadAllDataForPage(page),
+        onPageChanged: (page) => _loadDataForPage(page),
         onDocumentLoaded: (doc) => setState(() => _totalPages = doc.pagesCount),
-        builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
-          options: const DefaultBuilderOptions(),
-          builder: (context, pinchBuilders, state) {
-            return Stack(
-              children: [
-                pinchBuilders.pageBuilder(context, state),
-                ...(_highlights[_currentPage] ?? []).map((highlight) {
-                    return Positioned.fromRect(
-                      rect: highlight.rect,
-                      child: Container(color: Color(int.parse(highlight.color, radix: 16)).withOpacity(0.4)),
-                    );
-                }).toList(),
-              ],
-            );
-          },
-        ),
+        // ड्रॉ मोड में PDF को स्क्रॉल होने से रोकने के लिए
+        physics: _isDrawMode ? const NeverScrollableScrollPhysics() : null,
       ),
     );
 
@@ -150,16 +102,16 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
       appBar: AppBar(
         title: Text(widget.topicData['topicName']),
         actions: [
-          // FIX: नया एडिट/हाईलाइट बटन
+          // FIX: एडिट बटन अब Draw Mode को टॉगल करेगा
           IconButton(
-            icon: Icon(Icons.edit_note, color: _isHighlightMode ? Colors.blue : null),
-            tooltip: 'Highlight Mode',
-            onPressed: () => setState(() => _isHighlightMode = !_isHighlightMode),
+            icon: Icon(Icons.edit, color: _isDrawMode ? Colors.blue : null),
+            tooltip: 'Draw Mode',
+            onPressed: () => setState(() => _isDrawMode = !_isDrawMode),
           ),
           IconButton(
-            icon: const Icon(Icons.list_alt),
-            tooltip: 'View All Highlights',
-            onPressed: _showAllHighlights,
+            icon: const Icon(Icons.cleaning_services),
+            tooltip: 'Clear Drawings on this Page',
+            onPressed: _clearDrawings,
           ),
           IconButton(
             icon: Icon(_isNightMode ? Icons.wb_sunny : Icons.nightlight_round),
@@ -176,79 +128,105 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
       body: Stack(
         children: [
           pdfView,
-          if (_totalPages > 0)
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: Container(
-                margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.6),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text('$_currentPage / $_totalPages', style: const TextStyle(color: Colors.white, fontSize: 16)),
+          // FIX: ड्रॉइंग के लिए GestureDetector और CustomPaint
+          if (_isDrawMode)
+            GestureDetector(
+              onPanStart: (details) {
+                setState(() {
+                  _currentDrawingPoints.add(DrawingPoint(
+                    offset: details.localPosition,
+                    paint: Paint()
+                      ..color = _selectedPenColor
+                      ..strokeWidth = _selectedStrokeWidth
+                      ..strokeCap = StrokeCap.round,
+                  ));
+                });
+              },
+              onPanUpdate: (details) {
+                 setState(() {
+                  _currentDrawingPoints.add(DrawingPoint(
+                    offset: details.localPosition,
+                    paint: Paint()
+                      ..color = _selectedPenColor
+                      ..strokeWidth = _selectedStrokeWidth
+                      ..strokeCap = StrokeCap.round,
+                  ));
+                });
+              },
+              onPanEnd: (details) async {
+                await dbHelper.addDrawing(widget.topicData['filePath'], _currentPage, _currentDrawingPoints);
+                setState(() {
+                   _currentDrawingPoints.add(null); // लाइन ब्रेक के लिए
+                });
+              },
+              child: CustomPaint(
+                painter: DrawingPainter(_currentDrawingPoints),
+                child: SizedBox.expand(),
               ),
             ),
           
-          // FIX: कलर चुनने वाला पैलेट
-          _buildColorPalette(),
+          if (_totalPages > 0)
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Container( /* ... Page Number Indicator ... */ ),
+            ),
+          
+          // FIX: ड्रॉइंग टूल्स का पैलेट
+          _buildDrawingPalette(),
         ],
       ),
     );
   }
 
-  // FIX: कलर पैलेट बनाने वाला नया विजेट
-  Widget _buildColorPalette() {
-    final colors = [
-      Colors.yellow,
-      Colors.lightGreenAccent,
-      Colors.lightBlueAccent,
-      Colors.pinkAccent,
-    ];
+  Widget _buildDrawingPalette() {
+    final colors = [Colors.red, Colors.green, Colors.blue, Colors.black];
+    final strokeWidths = [4.0, 8.0, 12.0];
 
     return Visibility(
-      visible: _isHighlightMode,
+      visible: _isDrawMode,
       child: Positioned(
-        bottom: 70,
+        bottom: 20,
         left: 0,
         right: 0,
         child: Center(
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(30),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                )
-              ],
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10)],
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
-              children: colors.map((color) {
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedColor = color;
-                    });
-                  },
+              children: [
+                ...colors.map((color) => GestureDetector(
+                  onTap: () => setState(() => _selectedPenColor = color),
                   child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 6),
                     decoration: BoxDecoration(
                       color: color,
                       shape: BoxShape.circle,
-                      border: _selectedColor == color
-                          ? Border.all(color: Colors.blue, width: 3)
-                          : null,
+                      border: _selectedPenColor == color ? Border.all(color: Colors.black, width: 3) : null,
                     ),
                     width: 32,
                     height: 32,
                   ),
-                );
-              }).toList(),
+                )).toList(),
+                const VerticalDivider(width: 24, thickness: 1, indent: 8, endIndent: 8),
+                ...strokeWidths.map((width) => GestureDetector(
+                  onTap: () => setState(() => _selectedStrokeWidth = width),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 6),
+                    decoration: BoxDecoration(
+                      color: _selectedStrokeWidth == width ? Colors.blue.withOpacity(0.3) : Colors.transparent,
+                      shape: BoxShape.circle,
+                    ),
+                    width: 32,
+                    height: 32,
+                    child: Center(child: Icon(Icons.circle, size: width * 1.5)),
+                  ),
+                )).toList(),
+              ],
             ),
           ),
         ),
