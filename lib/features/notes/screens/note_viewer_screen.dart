@@ -39,7 +39,6 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
   int _totalPages = 0;
   bool _isNightMode = false;
   
-  // FIX: ड्रॉइंग के लिए नए स्टेट वेरिएबल्स
   bool _isDrawMode = false;
   List<DrawingPoint?> _currentDrawingPoints = [];
   Color _selectedPenColor = Colors.red;
@@ -93,8 +92,7 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
         controller: _pdfController,
         onPageChanged: (page) => _loadDataForPage(page),
         onDocumentLoaded: (doc) => setState(() => _totalPages = doc.pagesCount),
-        // ड्रॉ मोड में PDF को स्क्रॉल होने से रोकने के लिए
-        physics: _isDrawMode ? const NeverScrollableScrollPhysics() : null,
+        // FIX: physics वाली लाइन यहाँ से हटा दी गई है
       ),
     );
 
@@ -102,7 +100,6 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
       appBar: AppBar(
         title: Text(widget.topicData['topicName']),
         actions: [
-          // FIX: एडिट बटन अब Draw Mode को टॉगल करेगा
           IconButton(
             icon: Icon(Icons.edit, color: _isDrawMode ? Colors.blue : null),
             tooltip: 'Draw Mode',
@@ -128,7 +125,6 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
       body: Stack(
         children: [
           pdfView,
-          // FIX: ड्रॉइंग के लिए GestureDetector और CustomPaint
           if (_isDrawMode)
             GestureDetector(
               onPanStart: (details) {
@@ -154,10 +150,10 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
                 });
               },
               onPanEnd: (details) async {
-                await dbHelper.addDrawing(widget.topicData['filePath'], _currentPage, _currentDrawingPoints);
                 setState(() {
-                   _currentDrawingPoints.add(null); // लाइन ब्रेक के लिए
+                   _currentDrawingPoints.add(null); // Line break
                 });
+                await dbHelper.addDrawing(widget.topicData['filePath'], _currentPage, _currentDrawingPoints);
               },
               child: CustomPaint(
                 painter: DrawingPainter(_currentDrawingPoints),
@@ -168,10 +164,17 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
           if (_totalPages > 0)
             Align(
               alignment: Alignment.bottomCenter,
-              child: Container( /* ... Page Number Indicator ... */ ),
+              child: Container(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text('$_currentPage / $_totalPages', style: const TextStyle(color: Colors.white, fontSize: 16)),
+              ),
             ),
           
-          // FIX: ड्रॉइंग टूल्स का पैलेट
           _buildDrawingPalette(),
         ],
       ),
