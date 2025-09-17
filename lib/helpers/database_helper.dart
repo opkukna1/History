@@ -1,21 +1,17 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'dart:ui'; // Rect के लिए
 
+// Highlight क्लास से Rect (जगह) को हटा दिया गया
 class Highlight {
   final int id;
   final String noteFilePath;
   final int pageNumber;
-  final Rect rect;
-  final String color;
   final String text;
 
   Highlight({
     required this.id,
     required this.noteFilePath,
     required this.pageNumber,
-    required this.rect,
-    required this.color,
     required this.text,
   });
 }
@@ -36,7 +32,7 @@ class DatabaseHelper {
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('notes_v3.db');
+    _database = await _initDB('notes_v4.db'); // DB का नाम बदला गया
     return _database!;
   }
 
@@ -47,16 +43,12 @@ class DatabaseHelper {
   }
 
   Future _createDB(Database db, int version) async {
+    // highlights टेबल से rect वाले कॉलम हटा दिए गए
     await db.execute('''
     CREATE TABLE highlights (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       noteFilePath TEXT NOT NULL,
       pageNumber INTEGER NOT NULL,
-      rect_left REAL NOT NULL,
-      rect_top REAL NOT NULL,
-      rect_width REAL NOT NULL,
-      rect_height REAL NOT NULL,
-      color TEXT NOT NULL,
       text TEXT NOT NULL
     )
     ''');
@@ -71,33 +63,17 @@ class DatabaseHelper {
     ''');
   }
 
-  Future<void> addHighlight(String noteFilePath, int pageNumber, Rect rect, String color, String text) async {
+  // addHighlight फंक्शन को अपडेट किया गया
+  Future<void> addHighlight(String noteFilePath, int pageNumber, String text) async {
     final db = await instance.database;
     await db.insert('highlights', {
       'noteFilePath': noteFilePath,
       'pageNumber': pageNumber,
-      'rect_left': rect.left,
-      'rect_top': rect.top,
-      'rect_width': rect.width,
-      'rect_height': rect.height,
-      'color': color,
       'text': text,
     });
   }
-
-  Future<List<Highlight>> getHighlightsForPage(String noteFilePath, int pageNumber) async {
-    final db = await instance.database;
-    final maps = await db.query('highlights', where: 'noteFilePath = ? AND pageNumber = ?', whereArgs: [noteFilePath, pageNumber]);
-    return maps.map((map) => Highlight(
-      id: map['id'] as int,
-      noteFilePath: map['noteFilePath'] as String,
-      pageNumber: map['pageNumber'] as int,
-      rect: Rect.fromLTWH(map['rect_left'] as double, map['rect_top'] as double, map['rect_width'] as double, map['rect_height'] as double),
-      color: map['color'] as String,
-      text: map['text'] as String,
-    )).toList();
-  }
-
+  
+  // getAllHighlightsForNote फंक्शन को अपडेट किया गया
   Future<List<Highlight>> getAllHighlightsForNote(String noteFilePath) async {
     final db = await instance.database;
     final maps = await db.query('highlights', where: 'noteFilePath = ?', whereArgs: [noteFilePath], orderBy: 'pageNumber');
@@ -105,17 +81,16 @@ class DatabaseHelper {
       id: map['id'] as int,
       noteFilePath: map['noteFilePath'] as String,
       pageNumber: map['pageNumber'] as int,
-      rect: Rect.fromLTWH(map['rect_left'] as double, map['rect_top'] as double, map['rect_width'] as double, map['rect_height'] as double),
-      color: map['color'] as String,
       text: map['text'] as String,
     )).toList();
   }
 
-  Future<void> clearHighlightsOnPage(String noteFilePath, int pageNumber) async {
+  Future<void> clearAllHighlights(String noteFilePath) async {
     final db = await instance.database;
-    await db.delete('highlights', where: 'noteFilePath = ? AND pageNumber = ?', whereArgs: [noteFilePath, pageNumber]);
+    await db.delete('highlights', where: 'noteFilePath = ?', whereArgs: [noteFilePath]);
   }
   
+  // बाकी के बुकमार्क फंक्शन वैसे ही रहेंगे
   Future<void> toggleBookmark(String noteFilePath, String topicName, int pageNumber) async {
     final db = await instance.database;
     final isBookmarked = await isPageBookmarked(noteFilePath, pageNumber);
