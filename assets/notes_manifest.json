@@ -1,0 +1,28 @@
+[
+  {
+    "subject": "History (इतिहास)",
+    "topics": [
+      {
+        "topicName": "सिंधु घाटी सभ्यता",
+        "filePath": "assets/notes/sindhu_ghati.pdf"
+      },
+      {
+        "topicName": "वैदिक काल",
+        "filePath": "assets/notes/vaidik_kaal.pdf"
+      },
+      {
+        "topicName": "गुप्त साम्राज्य",
+        "filePath": "assets/notes/gupta_samrajya.pdf" 
+      }
+    ]
+  },
+  {
+    "subject": "Geography (भूगोल)",
+    "topics": [
+      {
+        "topicName": "भारत की नदियाँ",
+        "filePath": "assets/notes/bharat_ki_nadiya.pdf"
+      }
+    ]
+  }
+]
