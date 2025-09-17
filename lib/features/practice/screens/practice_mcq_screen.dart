@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/local_data_service.dart';
+import '../../../helpers/database_helper.dart';
 
 class PracticeMcqScreen extends StatefulWidget {
   final Map<String, dynamic> set;
@@ -19,6 +20,9 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
   final Map<int, String> _selectedAnswers = {};
   int _currentPage = 0;
 
+  final dbHelper = DatabaseHelper.instance;
+  bool _isBookmarked = false;
+
   @override
   void initState() {
     super.initState();
@@ -29,10 +33,42 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
     );
     _pageController = PageController();
     _pageController.addListener(() {
-      setState(() {
-        _currentPage = _pageController.page?.round() ?? 0;
-      });
+      final newPage = _pageController.page?.round() ?? 0;
+      if (newPage != _currentPage) {
+        setState(() {
+          _currentPage = newPage;
+          _checkIfBookmarked();
+        });
+      }
     });
+    _checkIfBookmarked();
+  }
+
+  Future<void> _checkIfBookmarked() async {
+    if (_questions.isNotEmpty && _currentPage < _questions.length) {
+      final isBookmarked = await dbHelper.isMcqBookmarked(_questions[_currentPage].questionText);
+      if (mounted) {
+        setState(() {
+          _isBookmarked = isBookmarked;
+        });
+      }
+    }
+  }
+
+  void _toggleMcqBookmark() async {
+    if (_questions.isEmpty || _currentPage >= _questions.length) return;
+    
+    final question = _questions[_currentPage];
+    if (_isBookmarked) {
+      await dbHelper.removeMcqBookmark(question.questionText);
+    } else {
+      await dbHelper.addMcqBookmark(
+          question, 
+          widget.set['subject'] as String, 
+          widget.set['topic'] as String
+      );
+    }
+    _checkIfBookmarked();
   }
 
   @override
@@ -61,6 +97,24 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
 
   void _handleAnswer(int questionIndex, String option) {
     if (_selectedAnswers.containsKey(questionIndex)) return;
+
+    final question = _questions[questionIndex];
+    final isCorrect = option == question.correctOption;
+
+    // FIX: अगर जवाब गलत है, तो प्रश्न को ऑटो-बुकमार्क करें
+    if (!isCorrect) {
+      dbHelper.addMcqBookmark(
+        question,
+        widget.set['subject'] as String,
+        widget.set['topic'] as String
+      ).then((_) {
+        // UI को अपडेट करने के लिए बुकमार्क स्टेटस को फिर से चेक करें
+        if (questionIndex == _currentPage) {
+          _checkIfBookmarked();
+        }
+      });
+    }
+
     setState(() {
       _selectedAnswers[questionIndex] = option;
     });
@@ -99,6 +153,13 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
         title: Text('Set ${widget.set['setIndex']}'),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(_isBookmarked ? Icons.bookmark : Icons.bookmark_border, color: Colors.white),
+            tooltip: 'Bookmark Question',
+            onPressed: _toggleMcqBookmark,
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -152,8 +213,7 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
                   style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 
-                // FIX: Spacer को यहाँ से हटा दिया गया है
-                const SizedBox(height: 24), // प्रश्न और विकल्पों के बीच थोड़ा गैप
+                const SizedBox(height: 24),
 
                 ...options.asMap().entries.map((entry) {
                   int optionIndex = entry.key;
@@ -163,7 +223,6 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
                     child: InkWell(
                       onTap: () => _handleAnswer(index, optionText),
                       child: Container(
-                        // FIX: पैडिंग बढ़ाई गई
                         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.grey.shade300),
@@ -172,7 +231,6 @@ class _PracticeMcqScreenState extends State<PracticeMcqScreen> {
                         ),
                         child: Text(
                           '${optionLabels[optionIndex]}. $optionText',
-                          // FIX: फॉन्ट साइज बढ़ाया गया
                           style: const TextStyle(fontSize: 17),
                         ),
                       ),
