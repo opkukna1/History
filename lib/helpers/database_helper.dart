@@ -1,17 +1,24 @@
+// lib/helpers/database_helper.dart
+
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-// ... (अन्य इम्पोर्ट्स)
+import '../core/local_data_service.dart'; // FIX: Question क्लास के लिए इम्पोर्ट
 
-// ... (Highlight, Bookmark, DrawingPoint क्लास वैसी ही रहेंगी) ...
+// FIX: इन क्लास को अब इसी फाइल में रखेंगे ताकि एरर न आए
+class Bookmark {
+  final int id;
+  final String noteFilePath;
+  final String topicName;
+  final int pageNumber;
+  Bookmark({required this.id, required this.noteFilePath, required this.topicName, required this.pageNumber});
+}
 
-// FIX: MCQ बुकमार्क के लिए नई क्लास
 class McqBookmark {
   final int id;
   final String subject;
   final String topic;
   final String questionText;
   final String correctOption;
-  
   McqBookmark({
     required this.id,
     required this.subject,
@@ -21,19 +28,25 @@ class McqBookmark {
   });
 }
 
-
 class DatabaseHelper {
-  // ... (database, _initDB फंक्शन वैसे ही रहेंगे) ...
-  _initDB(String filePath) async {
+  // FIX: Singleton पैटर्न को सही किया गया
+  static final DatabaseHelper instance = DatabaseHelper._init();
+  static Database? _database;
+  DatabaseHelper._init();
+
+  Future<Database> get database async {
+    if (_database != null) return _database!;
+    _database = await _initDB('notes_v8.db');
+    return _database!;
+  }
+
+  Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'notes_v8.db'); // DB का नाम बदला गया
+    final path = join(dbPath, filePath);
     return await openDatabase(path, version: 1, onCreate: _createDB);
   }
 
   Future _createDB(Database db, int version) async {
-    // ... (highlights, bookmarks, drawings टेबल वैसी ही रहेंगी) ...
-    
-    // FIX: MCQ बुकमार्क के लिए नई टेबल
     await db.execute('''
     CREATE TABLE mcq_bookmarks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,9 +56,18 @@ class DatabaseHelper {
       correctOption TEXT NOT NULL
     )
     ''');
+    await db.execute('''
+    CREATE TABLE bookmarks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      noteFilePath TEXT NOT NULL,
+      topicName TEXT NOT NULL,
+      pageNumber INTEGER NOT NULL,
+      UNIQUE(noteFilePath, pageNumber)
+    )
+    ''');
   }
-
-  // FIX: MCQ बुकमार्क के लिए नए फंक्शन
+  
+  // MCQ Bookmark Functions
   Future<int> addMcqBookmark(Question question, String subject, String topic) async {
     final db = await instance.database;
     return await db.insert('mcq_bookmarks', {
@@ -79,5 +101,32 @@ class DatabaseHelper {
     )).toList();
   }
 
-  // ... (बाकी के सभी फंक्शन वैसे ही रहेंगे) ...
+  // Note Bookmark Functions
+  Future<List<Bookmark>> getAllBookmarks() async {
+    final db = await instance.database;
+    final maps = await db.query('bookmarks', orderBy: 'topicName');
+    return maps.map((map) => Bookmark(
+      id: map['id'] as int,
+      noteFilePath: map['noteFilePath'] as String,
+      topicName: map['topicName'] as String,
+      pageNumber: map['pageNumber'] as int,
+    )).toList();
+  }
+
+  Future<void> toggleBookmark(String noteFilePath, String topicName, int pageNumber) async {
+    final db = await instance.database;
+    final isBookmarked = await isPageBookmarked(noteFilePath, pageNumber);
+    if (isBookmarked) {
+      await db.delete('bookmarks', where: 'noteFilePath = ? AND pageNumber = ?', whereArgs: [noteFilePath, pageNumber]);
+    } else {
+      await db.insert('bookmarks', {'noteFilePath': noteFilePath, 'topicName': topicName, 'pageNumber': pageNumber});
+    }
+  }
+
+  Future<bool> isPageBookmarked(String noteFilePath, int pageNumber) async {
+    final db = await instance.database;
+    final maps = await db.query('bookmarks', where: 'noteFilePath = ? AND pageNumber = ?', whereArgs: [noteFilePath, pageNumber]);
+    return maps.isNotEmpty;
+  }
 }
+
