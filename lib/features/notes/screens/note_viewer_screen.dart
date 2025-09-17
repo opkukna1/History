@@ -32,27 +32,6 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
       initialPage: widget.initialPage ?? 1,
     );
     _loadDataForPage(widget.initialPage ?? 1);
-
-    // Listener to update the save button's state
-    _pdfController.addListener(() {
-      if (mounted) {
-        // We use try-catch because accessing selection can sometimes throw an error
-        // if no selection exists.
-        try {
-           if (_pdfController.selection.text != _selectedText) {
-              setState(() {
-                _selectedText = _pdfController.selection.text;
-              });
-           }
-        } catch (e) {
-          if (_selectedText != null) {
-            setState(() {
-              _selectedText = null;
-            });
-          }
-        }
-      }
-    });
   }
 
   Future<void> _loadDataForPage(int page) async {
@@ -73,15 +52,19 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
   }
 
   void _saveCurrentSelection() async {
-    if (_selectedText == null || _selectedText!.trim().isEmpty) return;
+    // FIX: Get the selected text from the controller when the button is pressed
+    final selection = await _pdfController.getSelectedText();
+    if (selection == null || selection.trim().isEmpty) return;
     
-    await dbHelper.addHighlight(widget.topicData['filePath'], _currentPage, _selectedText!);
+    await dbHelper.addHighlight(widget.topicData['filePath'], _currentPage, selection);
     
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Saved for revision!')),
     );
-    // The selection will clear automatically when the user taps elsewhere
-    _loadDataForPage(_currentPage); // Refresh the list of highlights
+    
+    await _pdfController.clearSelection();
+    _loadDataForPage(_currentPage);
+    setState(() { _selectedText = null; }); // Reset the state
   }
   
   void _showPageHighlights() {
@@ -128,9 +111,8 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
           IconButton(
             icon: const Icon(Icons.save_alt),
             tooltip: 'Save Selection',
-            onPressed: (_selectedText != null && _selectedText!.isNotEmpty)
-              ? _saveCurrentSelection
-              : null,
+            // FIX: We no longer need to check _selectedText here, the button is always active
+            onPressed: _saveCurrentSelection,
           ),
 
           if (_pageHighlights.isNotEmpty)
@@ -173,4 +155,3 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
     );
   }
 }
-
