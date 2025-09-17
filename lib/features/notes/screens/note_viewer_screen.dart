@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
-import 'package:history_metallum/helpers/database_helper.dart';
+import '../../../helpers/database_helper.dart'; // FIX: इम्पोर्ट जोड़ा गया
 
 class NoteViewerScreen extends StatefulWidget {
   final Map<String, dynamic> topicData;
@@ -19,10 +19,7 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
   bool _isBookmarked = false;
   int _currentPage = 1;
   int _totalPages = 0;
-
-  List<Highlight> _pageHighlights = [];
-  
-  String? _selectedText;
+  bool _isNightMode = false;
 
   @override
   void initState() {
@@ -36,11 +33,9 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
 
   Future<void> _loadDataForPage(int page) async {
     final isBookmarkedFromDB = await dbHelper.isPageBookmarked(widget.topicData['filePath'], page);
-    final highlightsFromDB = await dbHelper.getHighlightsForPage(widget.topicData['filePath'], page);
     if (mounted) {
       setState(() {
         _isBookmarked = isBookmarkedFromDB;
-        _pageHighlights = highlightsFromDB;
         _currentPage = page;
       });
     }
@@ -51,51 +46,6 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
     _loadDataForPage(_currentPage);
   }
 
-  void _saveCurrentSelection() async {
-    // FIX: Get the selected text from the controller when the button is pressed
-    final selection = await _pdfController.getSelectedText();
-    if (selection == null || selection.trim().isEmpty) return;
-    
-    await dbHelper.addHighlight(widget.topicData['filePath'], _currentPage, selection);
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Saved for revision!')),
-    );
-    
-    await _pdfController.clearSelection();
-    _loadDataForPage(_currentPage);
-    setState(() { _selectedText = null; }); // Reset the state
-  }
-  
-  void _showPageHighlights() {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Text('Saved Notes (Page $_currentPage)', style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView.builder(
-                itemCount: _pageHighlights.length,
-                itemBuilder: (context, index) {
-                  return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 6.0),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: Text(_pageHighlights[index].text, style: const TextStyle(fontSize: 16)),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      )
-    );
-  }
-
   @override
   void dispose() {
     _pdfController.dispose();
@@ -104,24 +54,26 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    Widget pdfView = ColorFiltered(
+      colorFilter: _isNightMode 
+        ? const ColorFilter.matrix([-1, 0, 0, 0, 255, 0,-1, 0, 0, 255, 0, 0,-1, 0, 255, 0, 0, 0, 1, 0])
+        : const ColorFilter.mode(Colors.transparent, BlendMode.dst),
+      child: PdfViewPinch(
+        controller: _pdfController,
+        onPageChanged: (page) => _loadDataForPage(page),
+        onDocumentLoaded: (doc) => setState(() => _totalPages = doc.pagesCount),
+      ),
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.topicData['topicName']),
         actions: [
           IconButton(
-            icon: const Icon(Icons.save_alt),
-            tooltip: 'Save Selection',
-            // FIX: We no longer need to check _selectedText here, the button is always active
-            onPressed: _saveCurrentSelection,
+            icon: Icon(_isNightMode ? Icons.wb_sunny : Icons.nightlight_round),
+            tooltip: 'Toggle Night Mode',
+            onPressed: () => setState(() => _isNightMode = !_isNightMode),
           ),
-
-          if (_pageHighlights.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.note_alt),
-              tooltip: 'View Saved Notes',
-              onPressed: _showPageHighlights,
-            ),
-          
           IconButton(
             icon: Icon(_isBookmarked ? Icons.bookmark : Icons.bookmark_border),
             tooltip: 'Bookmark this Page',
@@ -131,12 +83,7 @@ class _NoteViewerScreenState extends State<NoteViewerScreen> {
       ),
       body: Stack(
         children: [
-          PdfViewPinch(
-            controller: _pdfController,
-            onPageChanged: (page) => _loadDataForPage(page),
-            onDocumentLoaded: (doc) => setState(() => _totalPages = doc.pagesCount),
-          ),
-          
+          pdfView,
           if (_totalPages > 0)
             Align(
               alignment: Alignment.bottomCenter,
